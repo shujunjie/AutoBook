@@ -7,6 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="AI随手记">
     <meta name="theme-color" content="#F2F2F7">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <title>AI 随手记</title>
     
     <!-- Tailwind CSS -->
@@ -95,6 +96,7 @@
             --shadow-color: rgba(0, 0, 0, 0.3);
         }
         ::-webkit-scrollbar { display: none; }
+        
         html, body {
             background-color: var(--bg-base);
             color: var(--text-primary);
@@ -186,25 +188,26 @@
         // --- 🎡 Wheel Picker Component (Optimized) ---
         const WheelPicker = ({ items, value, onChange, label }) => {
             const scrollerRef = useRef(null);
-            const isScrolling = useRef(false);
             const itemHeight = 44; 
 
-            // Initial Scroll and Sync
+            // Initialize position safely and update when value changes externally
             useEffect(() => {
-                if (scrollerRef.current && !isScrolling.current && items.length > 0) {
+                if (scrollerRef.current && items.length > 0) {
                     const index = items.indexOf(value);
                     if (index > -1) {
-                        scrollerRef.current.scrollTop = index * itemHeight;
+                        // Use a small timeout to ensure DOM is ready for scroll
+                        setTimeout(() => {
+                            if(scrollerRef.current) scrollerRef.current.scrollTop = index * itemHeight;
+                        }, 10);
                     }
                 }
-            }, [value, items]); 
+            }, [items, value]); 
 
             const handleScroll = (e) => {
-                isScrolling.current = true;
+                // Debounce logic handled by CSS snap mostly, but we trigger change here
+                // We use a small timeout to detect "end" of scroll or snap
                 clearTimeout(scrollerRef.current.scrollTimeout);
-                
                 scrollerRef.current.scrollTimeout = setTimeout(() => {
-                    isScrolling.current = false;
                     const index = Math.round(e.target.scrollTop / itemHeight);
                     if (index >= 0 && index < items.length) {
                         const selectedItem = items[index];
@@ -212,14 +215,14 @@
                             onChange(selectedItem);
                         }
                     }
-                }, 150);
+                }, 100);
             };
 
             return (
                 <div className="h-[220px] relative flex-1 overflow-hidden group cursor-grab active:cursor-grabbing">
                     <div 
                         ref={scrollerRef}
-                        className="h-full overflow-y-auto snap-y snap-mandatory no-scrollbar py-[88px]"
+                        className="h-full overflow-y-auto snap-y snap-mandatory no-scrollbar py-[88px] touch-pan-y"
                         onScroll={handleScroll}
                     >
                         {items.map((item) => (
@@ -237,25 +240,24 @@
         };
 
         // --- 📅 Date Picker Modal (Year & Month Only) ---
-        const DatePickerModal = ({ isOpen, onClose, currentDate, onDateSelect }) => {
-            if (!isOpen) return null;
-
+        const DatePickerModal = ({ onClose, currentDate, onDateSelect }) => {
             const today = new Date();
             const maxYear = today.getFullYear();
             const maxMonth = today.getMonth() + 1; 
 
-            // Local state initialized from passed currentDate
+            // Initialize state from currentDate prop to ensure it starts at the right position
             const [y, setY] = useState(currentDate.getFullYear());
             const [m, setM] = useState(currentDate.getMonth() + 1);
 
-            // 1. Generate Years
+            // 1. Generate Years (Limited to current year max)
             const years = Array.from({length: 11}, (_, i) => maxYear - i).reverse();
 
-            // 2. Generate Months
+            // 2. Generate Months (Limit if current year)
             const monthLimit = (y === maxYear) ? maxMonth : 12;
             const months = Array.from({length: monthLimit}, (_, i) => i + 1);
 
             useEffect(() => {
+                // Auto-correct month if out of bounds (e.g. switching to current year where only 3 months exist)
                 if (!months.includes(m)) setM(months[months.length - 1]);
             }, [y, m, months]);
 
@@ -281,8 +283,8 @@
                             {/* Visual Highlight Bar */}
                             <div className="absolute top-1/2 left-6 right-6 h-[40px] -translate-y-1/2 bg-brand-input/40 rounded-xl pointer-events-none z-0"></div>
                             
-                            {/* Wheels - ONLY Year and Month */}
-                            <div className="flex relative z-10">
+                            {/* Wheels - ONLY Year and Month, with overflow-hidden to prevent side scrolling */}
+                            <div className="flex relative z-10 w-full overflow-hidden">
                                 <WheelPicker 
                                     items={years} 
                                     value={y} 
@@ -605,12 +607,15 @@
                 <div className="min-h-full" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
                     <Toast message={toast.message} type={toast.type} />
                     
-                    <DatePickerModal 
-                        isOpen={isDatePickerOpen} 
-                        onClose={() => setIsDatePickerOpen(false)} 
-                        currentDate={currentDate} 
-                        onDateSelect={handleDateSelect} 
-                    />
+                    {/* Only render modal if open to force re-mount and state sync */}
+                    {isDatePickerOpen && (
+                        <DatePickerModal 
+                            isOpen={isDatePickerOpen}
+                            onClose={() => setIsDatePickerOpen(false)} 
+                            currentDate={currentDate} 
+                            onDateSelect={handleDateSelect} 
+                        />
+                    )}
 
                     <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-[-1] opacity-0 dark:opacity-100 transition-opacity duration-500">
                         <div className="absolute top-[-10%] left-[-10%] w-[300px] h-[300px] bg-brand-accent/10 rounded-full blur-[100px] animate-blob"></div>
