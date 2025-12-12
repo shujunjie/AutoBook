@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="AI随手记">
     <meta name="theme-color" content="#F2F2F7">
     <title>AI 随手记</title>
     
@@ -12,7 +13,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            darkMode: 'class', // Enable class-based dark mode
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
@@ -23,7 +24,6 @@
                         brand: {
                             bg: 'var(--bg-base)',
                             card: 'var(--bg-card)',
-                            cardPressed: 'var(--bg-card-pressed)',
                             accent: '#2E5CFF',
                             text: 'var(--text-primary)',
                             subtext: 'var(--text-secondary)',
@@ -34,7 +34,7 @@
                     animation: {
                         'blob': 'blob 10s infinite',
                         'fade-in': 'fadeIn 0.3s ease-out forwards',
-                        'slide-up': 'slideUp 0.4s cubic-bezier(0.19, 1, 0.22, 1) forwards',
+                        'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                     },
                     keyframes: {
                         blob: {
@@ -72,13 +72,10 @@
     <script type="module" src="https://esm.sh/run" defer></script>
 
     <style>
-        /* CSS Variables for Theming */
         :root {
-            /* Light Mode (Default) */
-            --bg-base: #F2F2F7;       /* iOS System Gray 6 */
-            --bg-card: #FFFFFF;       /* Pure White */
-            --bg-card-pressed: #F2F2F7;
-            --bg-input: #E5E5EA;      /* Input background */
+            --bg-base: #F2F2F7;
+            --bg-card: #FFFFFF;
+            --bg-input: #E5E5EA;
             --text-primary: #000000;
             --text-secondary: #8E8E93;
             --border-color: rgba(0, 0, 0, 0.08);
@@ -86,12 +83,9 @@
             --glass-tab: rgba(255, 255, 255, 0.92);
             --shadow-color: rgba(0, 0, 0, 0.05);
         }
-
         .dark {
-            /* Dark Mode */
             --bg-base: #000000;
             --bg-card: #1C1C1E;
-            --bg-card-pressed: #2C2C2E;
             --bg-input: #2C2C2E;
             --text-primary: #FFFFFF;
             --text-secondary: #8E8E93;
@@ -100,41 +94,22 @@
             --glass-tab: rgba(28, 28, 30, 0.92);
             --shadow-color: rgba(0, 0, 0, 0.3);
         }
-
         ::-webkit-scrollbar { display: none; }
-        body {
+        html, body {
             background-color: var(--bg-base);
             color: var(--text-primary);
             -webkit-tap-highlight-color: transparent;
             overscroll-behavior-y: none;
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
             transition: background-color 0.3s ease, color 0.3s ease;
+            height: 100%; width: 100%;
         }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
         .pt-safe { padding-top: env(safe-area-inset-top, 44px); }
         input:focus, textarea:focus { outline: none; }
-
-        /* Glassmorphism Classes */
-        .glass-nav {
-            background: var(--glass-nav);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .glass-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 20px var(--shadow-color);
-        }
-
-        .glass-tab {
-            background: var(--glass-tab);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border-top: 1px solid var(--border-color);
-        }
-
+        .glass-nav { background: var(--glass-nav); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); }
+        .glass-card { background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .glass-tab { background: var(--glass-tab); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-top: 1px solid var(--border-color); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -150,16 +125,15 @@
             Home, PieChart, Plus, X, Loader2, Save, Trash2, 
             CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Search, 
             Utensils, Car, ShoppingBag, Gamepad2, Home as HomeIcon, 
-            HeartPulse, Banknote, FileText, TrendingUp, Calendar, Moon, Sun
+            HeartPulse, Banknote, FileText, TrendingUp, Calendar, Moon, Sun,
+            ChevronDown
         } from 'lucide-react';
-        import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isSameDay } from 'date-fns';
+        import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isSameDay, getDaysInMonth, startOfDay } from 'date-fns';
 
-        // --- Configuration ---
         const SUPABASE_URL = 'https://lsggbiatbucdhhrgftra.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzZ2diaWF0YnVjZGhocmdmdHJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4OTA0NzIsImV4cCI6MjA3OTQ2NjQ3Mn0.GcAkpXZAETeSBSXoptYYmrlquwab0EapH7E8b5HCN7w';
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // --- Utils ---
         const formatMoney = (amount) => Math.abs(Number(amount)).toFixed(2);
         
         const haptic = (type = 'light') => {
@@ -209,24 +183,123 @@
             }
         };
 
-        // --- Components ---
+        // --- 🎡 Wheel Picker Component (Optimized) ---
+        const WheelPicker = ({ items, value, onChange, label }) => {
+            const scrollerRef = useRef(null);
+            const isScrolling = useRef(false);
+            const itemHeight = 44; 
 
-        const Modal = ({ isOpen, onClose, children, title, showClose = true }) => {
-            if (!isOpen) return null;
+            // Initial Scroll and Sync
+            useEffect(() => {
+                if (scrollerRef.current && !isScrolling.current && items.length > 0) {
+                    const index = items.indexOf(value);
+                    if (index > -1) {
+                        scrollerRef.current.scrollTop = index * itemHeight;
+                    }
+                }
+            }, [value, items]); 
+
+            const handleScroll = (e) => {
+                isScrolling.current = true;
+                clearTimeout(scrollerRef.current.scrollTimeout);
+                
+                scrollerRef.current.scrollTimeout = setTimeout(() => {
+                    isScrolling.current = false;
+                    const index = Math.round(e.target.scrollTop / itemHeight);
+                    if (index >= 0 && index < items.length) {
+                        const selectedItem = items[index];
+                        if (selectedItem !== value) {
+                            onChange(selectedItem);
+                        }
+                    }
+                }, 150);
+            };
+
             return (
-                <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
-                    <div className="absolute inset-0 bg-black/30 dark:bg-black/60 backdrop-blur-md transition-opacity" onClick={onClose}></div>
-                    <div className="relative w-full sm:max-w-md bg-brand-card rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-slide-up border border-brand-border sm:m-4 pb-safe transition-colors duration-300">
-                        <div className="flex justify-between items-center px-6 pt-6 pb-2">
-                            <h3 className="text-[20px] font-bold text-brand-text tracking-tight">{title}</h3>
-                            {showClose && (
-                                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-brand-input rounded-full text-brand-subtext hover:text-brand-text transition-colors">
-                                    <X size={18} />
-                                </button>
-                            )}
+                <div className="h-[220px] relative flex-1 overflow-hidden group cursor-grab active:cursor-grabbing">
+                    <div 
+                        ref={scrollerRef}
+                        className="h-full overflow-y-auto snap-y snap-mandatory no-scrollbar py-[88px]"
+                        onScroll={handleScroll}
+                    >
+                        {items.map((item) => (
+                            <div 
+                                key={item} 
+                                className={`h-[44px] flex items-center justify-center snap-center text-[17px] transition-all duration-200 
+                                    ${item === value ? 'font-semibold text-brand-text scale-110' : 'text-brand-subtext/60 scale-95'}`}
+                            >
+                                {item}{label}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 📅 Date Picker Modal (Year & Month Only) ---
+        const DatePickerModal = ({ isOpen, onClose, currentDate, onDateSelect }) => {
+            if (!isOpen) return null;
+
+            const today = new Date();
+            const maxYear = today.getFullYear();
+            const maxMonth = today.getMonth() + 1; 
+
+            // Local state initialized from passed currentDate
+            const [y, setY] = useState(currentDate.getFullYear());
+            const [m, setM] = useState(currentDate.getMonth() + 1);
+
+            // 1. Generate Years
+            const years = Array.from({length: 11}, (_, i) => maxYear - i).reverse();
+
+            // 2. Generate Months
+            const monthLimit = (y === maxYear) ? maxMonth : 12;
+            const months = Array.from({length: monthLimit}, (_, i) => i + 1);
+
+            useEffect(() => {
+                if (!months.includes(m)) setM(months[months.length - 1]);
+            }, [y, m, months]);
+
+            const handleConfirm = () => {
+                const newDate = new Date(y, m - 1, 1);
+                onDateSelect(newDate);
+                onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 z-[70] flex items-end justify-center">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity" onClick={onClose}></div>
+                    <div className="relative w-full sm:max-w-md bg-brand-card rounded-t-[28px] shadow-2xl overflow-hidden flex flex-col animate-slide-up border-t border-brand-border sm:m-4 pb-safe">
+                        
+                        {/* Header */}
+                        <div className="flex justify-between items-center px-6 pt-5 pb-2">
+                            <button onClick={onClose} className="text-[15px] text-brand-subtext hover:text-brand-text transition-colors">取消</button>
+                            <h3 className="text-[17px] font-bold text-brand-text">选择月份</h3>
+                            <button onClick={handleConfirm} className="text-[15px] font-bold text-brand-accent">确定</button>
                         </div>
-                        <div className="p-6 overflow-y-auto custom-scrollbar">
-                            {children}
+                        
+                        <div className="relative px-6 pb-6 pt-2">
+                            {/* Visual Highlight Bar */}
+                            <div className="absolute top-1/2 left-6 right-6 h-[40px] -translate-y-1/2 bg-brand-input/40 rounded-xl pointer-events-none z-0"></div>
+                            
+                            {/* Wheels - ONLY Year and Month */}
+                            <div className="flex relative z-10">
+                                <WheelPicker 
+                                    items={years} 
+                                    value={y} 
+                                    onChange={(val) => { setY(val); haptic('light'); }} 
+                                    label="年" 
+                                />
+                                <WheelPicker 
+                                    items={months} 
+                                    value={m} 
+                                    onChange={(val) => { setM(val); haptic('light'); }} 
+                                    label="月" 
+                                />
+                            </div>
+
+                            {/* Gradient Masks */}
+                            <div className="absolute top-0 left-0 right-0 h-[80px] bg-gradient-to-b from-brand-card to-transparent pointer-events-none z-20"></div>
+                            <div className="absolute bottom-0 left-0 right-0 h-[80px] bg-gradient-to-t from-brand-card to-transparent pointer-events-none z-20"></div>
                         </div>
                     </div>
                 </div>
@@ -246,8 +319,8 @@
             );
         };
 
-        // --- 📊 Interactive Line Chart ---
-        const InteractiveLineChart = ({ data, totalExpense }) => {
+        // --- Charts ---
+        const InteractiveLineChart = ({ data, totalExpense }) => { /* ... Keep Same ... */ 
             const [focusedIndex, setFocusedIndex] = useState(null);
             const containerRef = useRef(null);
 
@@ -259,122 +332,92 @@
                 if (data.length > 1) {
                     const index = Math.round((x / width) * (data.length - 1));
                     const clampedIndex = Math.max(0, Math.min(data.length - 1, index));
-                    if (clampedIndex !== focusedIndex) {
-                        setFocusedIndex(clampedIndex);
-                        haptic('light'); 
-                    }
+                    if (clampedIndex !== focusedIndex) { setFocusedIndex(clampedIndex); haptic('light'); }
                 }
             };
-
             const handleLeave = () => setFocusedIndex(null);
-
             const maxVal = Math.max(...data.map(d => d.value), 10); 
             const points = data.map((d, i) => {
                 const x = data.length > 1 ? (i / (data.length - 1)) * 100 : 50; 
                 const y = 100 - (d.value / maxVal) * 80; 
                 return { x, y, ...d };
             });
-
             let pathData = '';
             if (data.length > 1) {
                 pathData = points.reduce((acc, p, i, a) => {
                     if (i === 0) return `M ${p.x},${p.y}`;
-                    const prev = a[i - 1];
-                    const cp1x = prev.x + (p.x - prev.x) / 2;
-                    const cp1y = prev.y;
-                    const cp2x = p.x - (p.x - prev.x) / 2;
-                    const cp2y = p.y;
+                    const prev = a[i - 1]; const cp1x = prev.x + (p.x - prev.x) / 2; const cp1y = prev.y; const cp2x = p.x - (p.x - prev.x) / 2; const cp2y = p.y;
                     return `${acc} C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p.x},${p.y}`;
                 }, '');
-            } else if (data.length === 1) {
-                pathData = `M 0,${points[0].y} L 100,${points[0].y}`; 
-            }
-
+            } else if (data.length === 1) { pathData = `M 0,${points[0].y} L 100,${points[0].y}`; }
             const areaPath = `${pathData} L 100,120 L 0,120 Z`;
-
             const displayAmount = focusedIndex !== null ? data[focusedIndex].value : totalExpense;
             let displayLabel = '本月总支出';
-            if (focusedIndex !== null) {
-                const d = data[focusedIndex];
-                displayLabel = `${d.date.getDate()}日`;
-            }
+            if (focusedIndex !== null) { const d = data[focusedIndex]; displayLabel = `${d.date.getDate()}日`; }
 
             return (
                 <div className="glass-card rounded-[28px] p-6 select-none relative overflow-hidden group transition-colors duration-300">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-brand-accent/5 rounded-full blur-3xl pointer-events-none"></div>
-                    
                     <div className="mb-6 flex flex-col items-center h-[50px] justify-center relative z-10">
-                        <span className="text-[12px] text-brand-subtext font-medium tracking-wide uppercase mb-1">
-                            {displayLabel}
-                        </span>
-                        <span className="text-[34px] font-bold text-brand-text font-mono tracking-tight">
-                            ¥{formatMoney(displayAmount)}
-                        </span>
+                        <span className="text-[12px] text-brand-subtext font-medium tracking-wide uppercase mb-1">{displayLabel}</span>
+                        <span className="text-[34px] font-bold text-brand-text font-mono tracking-tight">¥{formatMoney(displayAmount)}</span>
                     </div>
-
-                    <div 
-                        ref={containerRef}
-                        className="relative h-[160px] w-full touch-none cursor-crosshair active:cursor-grabbing z-10"
-                        onTouchStart={handleTouch}
-                        onTouchMove={handleTouch}
-                        onTouchEnd={handleLeave}
-                        onMouseMove={handleTouch}
-                        onMouseLeave={handleLeave}
-                    >
+                    <div ref={containerRef} className="relative h-[160px] w-full touch-none cursor-crosshair active:cursor-grabbing z-10"
+                        onTouchStart={handleTouch} onTouchMove={handleTouch} onTouchEnd={handleLeave} onMouseMove={handleTouch} onMouseLeave={handleLeave}>
                         <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="overflow-visible">
                             <defs>
-                                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="#2E5CFF" stopOpacity="0.5" />
-                                    <stop offset="100%" stopColor="#2E5CFF" stopOpacity="0" />
-                                </linearGradient>
+                                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#2E5CFF" stopOpacity="0.5" /><stop offset="100%" stopColor="#2E5CFF" stopOpacity="0" /></linearGradient>
                             </defs>
-
                             <line x1="0" y1="20" x2="100" y2="20" stroke="currentColor" strokeOpacity="0.1" strokeWidth="0.5" strokeDasharray="4 4" className="text-brand-text" />
-                            <line x1="0" y1="60" x2="100" y2="60" stroke="currentColor" strokeOpacity="0.1" strokeWidth="0.5" strokeDasharray="4 4" className="text-brand-text" />
                             <line x1="0" y1="100" x2="100" y2="100" stroke="currentColor" strokeOpacity="0.1" strokeWidth="0.5" className="text-brand-text" />
-
                             <path d={areaPath} fill="url(#chartGradient)" />
                             <path d={pathData} fill="none" stroke="#2E5CFF" strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-
-                            {focusedIndex !== null && (
-                                <g>
-                                    <line 
-                                        x1={points[focusedIndex].x} y1="0" 
-                                        x2={points[focusedIndex].x} y2="100" 
-                                        stroke="currentColor" strokeOpacity="0.5" strokeWidth="1" vectorEffect="non-scaling-stroke"
-                                        strokeDasharray="2 2"
-                                        className="text-brand-text"
-                                    />
-                                    <circle 
-                                        cx={points[focusedIndex].x} cy={points[focusedIndex].y} r="6" 
-                                        fill="#2E5CFF" stroke="#FFFFFF" strokeWidth="3" vectorEffect="non-scaling-stroke"
-                                    />
-                                </g>
-                            )}
+                            {focusedIndex !== null && (<g><line x1={points[focusedIndex].x} y1="0" x2={points[focusedIndex].x} y2="100" stroke="currentColor" strokeOpacity="0.5" strokeWidth="1" vectorEffect="non-scaling-stroke" strokeDasharray="2 2" className="text-brand-text" /><circle cx={points[focusedIndex].x} cy={points[focusedIndex].y} r="6" fill="#2E5CFF" stroke="#FFFFFF" strokeWidth="3" vectorEffect="non-scaling-stroke" /></g>)}
                         </svg>
-
-                        <div className="absolute top-full left-0 w-full flex justify-between text-[10px] text-brand-subtext mt-3 font-medium">
-                            <span>1日</span>
-                            <span>{data.length}日</span>
-                        </div>
+                        <div className="absolute top-full left-0 w-full flex justify-between text-[10px] text-brand-subtext mt-3 font-medium"><span>1日</span><span>{data.length}日</span></div>
                     </div>
                 </div>
             );
         };
 
+        const Modal = ({ isOpen, onClose, children, title, showClose = true }) => { /* ... Keep Same ... */
+             if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
+                    <div className="absolute inset-0 bg-black/30 dark:bg-black/60 backdrop-blur-md transition-opacity" onClick={onClose}></div>
+                    <div className="relative w-full sm:max-w-md bg-brand-card rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-slide-up border border-brand-border sm:m-4 pb-safe transition-colors duration-300">
+                        <div className="flex justify-between items-center px-6 pt-6 pb-2">
+                            <h3 className="text-[20px] font-bold text-brand-text tracking-tight">{title}</h3>
+                            {showClose && (
+                                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-brand-input rounded-full text-brand-subtext hover:text-brand-text transition-colors">
+                                    <X size={18} />
+                                </button>
+                            )}
+                        </div>
+                        <div className="p-6 overflow-y-auto custom-scrollbar">
+                            {children}
+                        </div>
+                    </div>
+                </div>
+            );
+         };
+
         // --- Main App ---
 
         function App() {
-            const [isDarkMode, setIsDarkMode] = useState(false); // Default Light
+            const [isDarkMode, setIsDarkMode] = useState(false);
             const [activeTab, setActiveTab] = useState('home');
             const [transactions, setTransactions] = useState([]);
             const [loading, setLoading] = useState(false);
             const [currentDate, setCurrentDate] = useState(new Date());
             
+            const [homeViewMode, setHomeViewMode] = useState('month'); 
             const [pieViewMode, setPieViewMode] = useState('month'); 
             
             const [isAddModalOpen, setIsAddModalOpen] = useState(false);
             const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+            const [isDatePickerOpen, setIsDatePickerOpen] = useState(false); // Date Picker State
+            
             const [currentTransaction, setCurrentTransaction] = useState(null); 
             
             const [toast, setToast] = useState({ message: '', type: '' });
@@ -390,11 +433,10 @@
 
             const categories = ['餐饮', '交通', '购物', '娱乐', '居住', '医疗', '工资', '其他'];
 
-            // Theme Toggle Logic
             useEffect(() => {
                 if (isDarkMode) {
                     document.documentElement.classList.add('dark');
-                    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#050505');
+                    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#000000');
                 } else {
                     document.documentElement.classList.remove('dark');
                     document.querySelector('meta[name="theme-color"]').setAttribute('content', '#F2F2F7');
@@ -407,12 +449,11 @@
                 setTimeout(() => setToast({ message: '', type: '' }), 2500);
             };
 
-            // Fetch Data
             useEffect(() => {
                 fetchTransactions();
                 const sub = supabase.channel('public:transactions').on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, fetchTransactions).subscribe();
                 return () => supabase.removeChannel(sub);
-            }, [currentDate, pieViewMode, activeTab]);
+            }, [currentDate, pieViewMode, activeTab, homeViewMode]);
 
             const fetchTransactions = async () => {
                 if (!isRefreshing) setLoading(true);
@@ -440,10 +481,9 @@
                 } else setPullY(0);
             };
 
-            const navigateDate = (offset) => {
-                const newDate = new Date(currentDate);
-                newDate.setMonth(newDate.getMonth() + offset);
-                setCurrentDate(newDate); haptic('light');
+            const handleDateSelect = (date) => {
+                setCurrentDate(date);
+                haptic('success');
             };
 
             const handleOpenEdit = (t) => {
@@ -472,20 +512,20 @@
                 setIsEditModalOpen(false);
             };
 
-            // Calculations
             const totalExpense = useMemo(() => {
                 const range = getDateRange(currentDate, 'month');
                 return transactions.filter(t => new Date(t.date) >= range.start && new Date(t.date) <= range.end)
                     .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
             }, [transactions, currentDate]);
 
+            // 🔥 CHANGED: Always calculate TODAY's expense (Real Today)
             const todayExpense = useMemo(() => {
                 const todayStr = new Date().toDateString();
-                return transactions.filter(t => new Date(t.date).toDateString() === todayStr)
+                return transactions
+                    .filter(t => new Date(t.date).toDateString() === todayStr)
                     .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
             }, [transactions]);
 
-            // Chart Data
             const lineChartData = useMemo(() => {
                 if (activeTab !== 'stats') return [];
                 const range = getDateRange(currentDate, 'month');
@@ -502,7 +542,6 @@
                 return points;
             }, [transactions, currentDate, activeTab]);
 
-            // Pie & Ranking Data
             const categoryStats = useMemo(() => {
                 const stats = {};
                 let sum = 0;
@@ -531,15 +570,15 @@
                     currentPercent = nextPercent;
                 });
                 return gradient.slice(0, -2) + ')';
-            }, [categoryStats, isDarkMode]); // Add dependency on theme if colors change, though hex stays same
+            }, [categoryStats, isDarkMode]);
 
-            // List Grouping
             const filteredTransactions = useMemo(() => {
+                // Home list always follows Month logic (as user requested: card is today, list is month)
                 const range = getDateRange(currentDate, 'month');
                 let list = transactions.filter(t => { const d = new Date(t.date); return d >= range.start && d <= range.end; });
                 if (searchQuery) list = list.filter(t => t.merchant?.includes(searchQuery) || t.note?.includes(searchQuery) || t.category.includes(searchQuery));
                 return list;
-            }, [transactions, searchQuery, currentDate]);
+            }, [transactions, searchQuery, currentDate, activeTab]);
 
             const groupedTransactions = useMemo(() => {
                 const groups = {};
@@ -558,24 +597,32 @@
                 return groups;
             }, [filteredTransactions]);
 
-            return (
-                <div className="min-h-screen pb-24 relative transition-colors duration-300" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
-                    <Toast message={toast.message} type={toast.type} />
+            const headerLabel = useMemo(() => {
+                return `${currentDate.getFullYear()}年 ${currentDate.getMonth() + 1}月`;
+            }, [currentDate]);
 
-                    {/* Fluid Background (Only visible in Dark Mode) */}
+            return (
+                <div className="min-h-full" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+                    <Toast message={toast.message} type={toast.type} />
+                    
+                    <DatePickerModal 
+                        isOpen={isDatePickerOpen} 
+                        onClose={() => setIsDatePickerOpen(false)} 
+                        currentDate={currentDate} 
+                        onDateSelect={handleDateSelect} 
+                    />
+
                     <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-[-1] opacity-0 dark:opacity-100 transition-opacity duration-500">
                         <div className="absolute top-[-10%] left-[-10%] w-[300px] h-[300px] bg-brand-accent/10 rounded-full blur-[100px] animate-blob"></div>
-                        <div className="absolute top-[20%] right-[-10%] w-[250px] h-[250px] bg-brand-purple/10 rounded-full blur-[80px] animate-blob" style={{animationDelay: '2s'}}></div>
+                        <div className="absolute top-[20%] right-[-10%] w-[250px] h-[250px] bg-purple-600/10 rounded-full blur-[80px] animate-blob" style={{animationDelay: '2s'}}></div>
                     </div>
 
-                    {/* Pull to Refresh */}
-                    <div className="fixed top-[50px] left-0 w-full flex justify-center pointer-events-none z-30 transition-opacity duration-300" style={{ transform: `translateY(${pullY * 0.5}px)`, opacity: pullY > 20 ? 1 : 0 }}>
-                        <div className="bg-brand-card p-2.5 rounded-full backdrop-blur-md shadow-xl border border-brand-border">
-                            <Loader2 className={`text-brand-accent ${isRefreshing ? 'animate-spin' : ''}`} size={20} style={{ transform: `rotate(${pullY * 2}deg)` }} />
+                    <div className="fixed top-[120px] left-0 w-full flex justify-center pointer-events-none z-[100] transition-opacity duration-300" style={{ transform: `translateY(${pullY * 0.5}px)`, opacity: pullY > 20 ? 1 : 0 }}>
+                        <div className="bg-brand-card p-3 rounded-full backdrop-blur-md shadow-2xl border border-brand-border">
+                            <Loader2 className={`text-brand-accent ${isRefreshing ? 'animate-spin' : ''}`} size={24} style={{ transform: `rotate(${pullY * 2}deg)` }} />
                         </div>
                     </div>
 
-                    {/* Navbar */}
                     <header className="fixed top-0 w-full glass-nav z-40 pt-safe transition-all duration-300">
                         <div className="flex justify-between items-center px-5 h-[52px] max-w-md mx-auto">
                             {showSearch ? (
@@ -589,35 +636,39 @@
                                 </div>
                             ) : (
                                 <>
-                                    <button onClick={() => navigateDate(-1)} className="p-2 text-brand-accent hover:opacity-70 transition-opacity active:scale-90"><ChevronLeft size={22} /></button>
+                                    {/* Spacer for Centering */}
+                                    <div className="w-[32px]"></div>
+                                    
                                     <div className="flex flex-col items-center">
-                                        <span className="text-[12px] text-brand-subtext font-medium tracking-widest uppercase mb-0.5">{currentDate.getFullYear()}</span>
-                                        <h2 className="text-[18px] font-bold text-brand-text tracking-tight">{currentDate.getMonth() + 1}月</h2>
+                                        {/* Removed "账单" span */}
+                                        <div className="flex items-center gap-1 cursor-pointer bg-brand-input/50 px-3 py-0.5 rounded-lg active:scale-95 transition-all" onClick={() => { setIsDatePickerOpen(true); haptic('light'); }}> 
+                                            <h2 className="text-[17px] font-bold text-brand-text tracking-tight">{headerLabel}</h2>
+                                            <ChevronDown size={14} className="text-brand-subtext" />
+                                        </div>
                                     </div>
+
                                     <div className="flex items-center gap-1">
                                         <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 text-brand-subtext hover:text-brand-text transition-colors active:scale-90">
                                             {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
                                         </button>
                                         {activeTab === 'home' && <button onClick={() => setShowSearch(true)} className="p-2 text-brand-accent hover:opacity-70 transition-opacity active:scale-90"><Search size={22} /></button>}
-                                        <button onClick={() => navigateDate(1)} className="p-2 text-brand-accent hover:opacity-70 transition-opacity active:scale-90"><ChevronRight size={22} /></button>
                                     </div>
                                 </>
                             )}
                         </div>
                     </header>
-
-                    {/* Content */}
+                    
+                    {/* Content (Main, Modals) */}
                     <main className="pt-safe mt-[68px] px-4 max-w-md mx-auto space-y-6 transition-transform duration-300 ease-out" style={{ transform: `translateY(${pullY}px)` }}>
-                        
-                        {/* --- HOME TAB --- */}
                         {activeTab === 'home' && (
                             <div className="animate-fade-in">
                                 {!showSearch && (
                                     <div className="relative overflow-hidden rounded-[32px] bg-white dark:bg-gradient-to-br dark:from-[#1c1c1e] dark:to-[#121212] border border-brand-border p-6 mb-6 shadow-xl shadow-gray-200/50 dark:shadow-none group transition-all duration-300">
                                         <div className="absolute top-0 right-0 w-32 h-32 bg-brand-accent/10 rounded-full blur-3xl pointer-events-none group-hover:bg-brand-accent/20 transition-all duration-700 opacity-0 dark:opacity-100"></div>
-                                        
                                         <div className="relative z-10">
-                                            <p className="text-brand-subtext text-[13px] font-medium uppercase tracking-wide mb-1">今日支出</p>
+                                            <p className="text-brand-subtext text-[13px] font-medium uppercase tracking-wide mb-1">
+                                                今日支出
+                                            </p>
                                             <h2 className="text-[40px] font-bold text-brand-text tracking-tight flex items-baseline mb-4 font-mono">
                                                 <span className="text-[24px] mr-1 text-brand-subtext font-normal">¥</span>
                                                 {formatMoney(todayExpense)}
@@ -632,14 +683,13 @@
                                         </button>
                                     </div>
                                 )}
-
-                                <div className="space-y-4 pb-safe">
+                                <div className="space-y-4 pb-safe mb-24">
                                     {loading && !isRefreshing ? (
                                         <div className="flex justify-center py-12"><Loader2 className="animate-spin text-brand-subtext" /></div>
                                     ) : Object.keys(groupedTransactions).length === 0 ? (
                                         <div className="text-center py-20 opacity-50 flex flex-col items-center">
                                             <div className="w-16 h-16 bg-brand-input rounded-full flex items-center justify-center mb-4"><FileText size={24} className="text-brand-subtext" /></div>
-                                            <p className="text-[14px] text-brand-subtext">本月暂无记录</p>
+                                            <p className="text-[14px] text-brand-subtext">暂无记录</p>
                                         </div>
                                     ) : (
                                         Object.entries(groupedTransactions).map(([header, group]) => (
@@ -677,10 +727,9 @@
                                 </div>
                             </div>
                         )}
-                        
-                        {/* --- STATS TAB --- */}
+                        {/* Stats Tab remains same */}
                         {activeTab === 'stats' && (
-                           <div className="animate-fade-in space-y-6 pb-safe">
+                           <div className="animate-fade-in space-y-6 pb-safe mb-24">
                              <div className="glass-card rounded-[32px] p-2">
                                 <div className="flex items-center justify-between mb-2 px-5 pt-4">
                                     <h3 className="text-[13px] font-semibold text-brand-subtext uppercase tracking-wide flex items-center gap-2">
@@ -691,7 +740,6 @@
                                     <InteractiveLineChart data={lineChartData} totalExpense={totalExpense} />
                                 </div>
                              </div>
-
                              <div className="glass-card rounded-[32px] p-6 flex flex-col items-center">
                                 <div className="flex bg-brand-input p-1 rounded-xl w-full mb-8 max-w-[280px] border border-brand-border shadow-inner">
                                     {['day', 'week', 'month', 'year'].map(mode => (
@@ -700,7 +748,6 @@
                                         </button>
                                     ))}
                                 </div>
-
                                 <div className="w-56 h-56 rounded-full relative flex items-center justify-center mb-8 shadow-lg ring-1 ring-brand-border" style={{ background: pieGradient }}>
                                     <div className="w-44 h-44 bg-brand-card rounded-full flex flex-col items-center justify-center shadow-inner z-10 transition-colors duration-300">
                                         <span className="text-brand-subtext text-[11px] font-semibold uppercase tracking-wider mb-1">
@@ -709,7 +756,6 @@
                                         <span className="text-brand-text text-[28px] font-bold font-mono tracking-tight">¥{Math.round(categoryStats.total)}</span>
                                     </div>
                                 </div>
-                                
                                 <div className="w-full space-y-3">
                                     {categoryStats.data.map((cat, idx) => {
                                         const color = getCategoryColor(cat.name);
@@ -740,7 +786,6 @@
                         )}
                     </main>
 
-                    {/* Tab Bar */}
                     <nav className="fixed bottom-0 w-full glass-tab z-50 pb-safe pt-2">
                         <div className="grid grid-cols-2 h-[50px] relative">
                             <button onClick={() => {setActiveTab('home'); haptic('light');}} className={`flex flex-col items-center justify-center gap-1 transition-all duration-300 ${activeTab==='home' ? 'text-brand-accent' : 'text-brand-subtext hover:text-brand-text'}`}>
@@ -754,7 +799,6 @@
                         </div>
                     </nav>
 
-                    {/* Add Modal */}
                     <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="记一笔">
                         <div className="space-y-6">
                             <div>
@@ -792,7 +836,6 @@
                         </div>
                     </Modal>
 
-                    {/* Edit Modal */}
                     <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="编辑记录">
                         <div className="space-y-6">
                             <div className="bg-brand-input rounded-[20px] px-5 py-4 flex items-center border border-brand-border shadow-inner"><span className="text-[24px] text-brand-subtext mr-2 font-light">¥</span><input type="number" value={form.amount} onChange={(e) => setForm({...form, amount: e.target.value})} className="w-full bg-transparent text-[32px] font-bold text-brand-text placeholder-gray-400 h-[40px] font-mono" /></div>
