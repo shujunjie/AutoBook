@@ -185,27 +185,28 @@
             }
         };
 
-        // --- 🎡 Wheel Picker Component (Optimized) ---
+        // --- 🎡 Wheel Picker Component (Fixes for Initial Pos & Dragging) ---
         const WheelPicker = ({ items, value, onChange, label }) => {
             const scrollerRef = useRef(null);
+            const isScrolling = useRef(false);
             const itemHeight = 44; 
 
-            // Initialize position safely and update when value changes externally
+            // Initialize position with a slight delay and retry to handle animation
             useEffect(() => {
                 if (scrollerRef.current && items.length > 0) {
                     const index = items.indexOf(value);
                     if (index > -1) {
-                        // Use a small timeout to ensure DOM is ready for scroll
-                        setTimeout(() => {
+                        // Double attempt to set position to ensure it sticks after modal animation
+                        const setPos = () => {
                             if(scrollerRef.current) scrollerRef.current.scrollTop = index * itemHeight;
-                        }, 10);
+                        };
+                        setTimeout(setPos, 10);
+                        setTimeout(setPos, 100);
                     }
                 }
-            }, [items, value]); 
+            }, [value]); // Re-run when value changes
 
             const handleScroll = (e) => {
-                // Debounce logic handled by CSS snap mostly, but we trigger change here
-                // We use a small timeout to detect "end" of scroll or snap
                 clearTimeout(scrollerRef.current.scrollTimeout);
                 scrollerRef.current.scrollTimeout = setTimeout(() => {
                     const index = Math.round(e.target.scrollTop / itemHeight);
@@ -219,10 +220,11 @@
             };
 
             return (
-                <div className="h-[220px] relative flex-1 overflow-hidden group cursor-grab active:cursor-grabbing">
+                <div className="h-[220px] relative flex-1 overflow-hidden group">
                     <div 
                         ref={scrollerRef}
-                        className="h-full overflow-y-auto snap-y snap-mandatory no-scrollbar py-[88px] touch-pan-y"
+                        className="h-full overflow-y-auto snap-y snap-mandatory no-scrollbar py-[88px]"
+                        style={{ touchAction: 'pan-y', overscrollBehaviorY: 'contain' }} // LOCK HORIZONTAL SCROLL
                         onScroll={handleScroll}
                     >
                         {items.map((item) => (
@@ -239,17 +241,17 @@
             );
         };
 
-        // --- 📅 Date Picker Modal (Year & Month Only) ---
+        // --- 📅 Date Picker Modal (Year & Month Only, No Future) ---
         const DatePickerModal = ({ onClose, currentDate, onDateSelect }) => {
             const today = new Date();
             const maxYear = today.getFullYear();
             const maxMonth = today.getMonth() + 1; 
 
-            // Initialize state from currentDate prop to ensure it starts at the right position
+            // Initialize state from currentDate passed in
             const [y, setY] = useState(currentDate.getFullYear());
             const [m, setM] = useState(currentDate.getMonth() + 1);
 
-            // 1. Generate Years (Limited to current year max)
+            // 1. Generate Years (Up to current year)
             const years = Array.from({length: 11}, (_, i) => maxYear - i).reverse();
 
             // 2. Generate Months (Limit if current year)
@@ -257,9 +259,11 @@
             const months = Array.from({length: monthLimit}, (_, i) => i + 1);
 
             useEffect(() => {
-                // Auto-correct month if out of bounds (e.g. switching to current year where only 3 months exist)
-                if (!months.includes(m)) setM(months[months.length - 1]);
-            }, [y, m, months]);
+                // Auto-correct month if current selection is out of bounds for the new year
+                if (y === maxYear && m > maxMonth) {
+                    setM(maxMonth);
+                }
+            }, [y, maxYear, maxMonth]);
 
             const handleConfirm = () => {
                 const newDate = new Date(y, m - 1, 1);
@@ -283,7 +287,7 @@
                             {/* Visual Highlight Bar */}
                             <div className="absolute top-1/2 left-6 right-6 h-[40px] -translate-y-1/2 bg-brand-input/40 rounded-xl pointer-events-none z-0"></div>
                             
-                            {/* Wheels - ONLY Year and Month, with overflow-hidden to prevent side scrolling */}
+                            {/* Wheels - ONLY Year and Month, overflow-hidden to prevent wobble */}
                             <div className="flex relative z-10 w-full overflow-hidden">
                                 <WheelPicker 
                                     items={years} 
