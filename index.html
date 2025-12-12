@@ -185,18 +185,16 @@
             }
         };
 
-        // --- 🎡 Wheel Picker Component (Optimized) ---
+        // --- 🎡 Wheel Picker Component (Optical Center Fixed) ---
         const WheelPicker = ({ items, value, onChange, label }) => {
             const scrollerRef = useRef(null);
             const isScrolling = useRef(false);
-            const itemHeight = 44; 
+            const itemHeight = 40; // Changed to 40px to match new calc
 
-            // Initialize position safely
             useEffect(() => {
                 if (scrollerRef.current && items.length > 0) {
                     const index = items.indexOf(value);
                     if (index > -1) {
-                        // Double attempt to set position to ensure it sticks after modal animation
                         const setPos = () => {
                             if(scrollerRef.current) scrollerRef.current.scrollTop = index * itemHeight;
                         };
@@ -220,20 +218,21 @@
             };
 
             return (
-                <div className="h-[220px] relative flex-1 overflow-hidden group">
+                <div className="h-[200px] relative flex-1 overflow-hidden group">
                     <div 
                         ref={scrollerRef}
-                        className="h-full overflow-y-auto snap-y snap-mandatory no-scrollbar py-[88px]"
-                        style={{ touchAction: 'pan-y', overscrollBehaviorY: 'contain' }} // LOCK HORIZONTAL SCROLL
+                        className="h-full overflow-y-auto snap-y snap-mandatory no-scrollbar py-[80px]"
+                        style={{ touchAction: 'pan-y', overscrollBehaviorY: 'contain' }}
                         onScroll={handleScroll}
                     >
                         {items.map((item) => (
                             <div 
                                 key={item} 
-                                className={`h-[44px] flex items-center justify-center snap-center text-[17px] transition-all duration-200 
+                                className={`h-[40px] flex items-center justify-center snap-center text-[17px] transition-all duration-200 
                                     ${item === value ? 'font-semibold text-brand-text scale-110' : 'text-brand-subtext/60 scale-95'}`}
                             >
-                                {item}{label}
+                                {/* Added pt-1 for optical centering */}
+                                <span className="pt-1 leading-none">{item}{label}</span>
                             </div>
                         ))}
                     </div>
@@ -241,20 +240,16 @@
             );
         };
 
-        // --- 📅 Date Picker Modal (Refined: Strong Gray Highlight) ---
+        // --- 📅 Date Picker Modal (Refined: Natural Gray Bar & Optical Center) ---
         const DatePickerModal = ({ onClose, currentDate, onDateSelect }) => {
             const today = new Date();
             const maxYear = today.getFullYear();
             const maxMonth = today.getMonth() + 1; 
 
-            // Initialize state from currentDate passed in
             const [y, setY] = useState(currentDate.getFullYear());
             const [m, setM] = useState(currentDate.getMonth() + 1);
 
-            // 1. Generate Years (Up to current year)
             const years = Array.from({length: 11}, (_, i) => maxYear - i).reverse();
-
-            // 2. Generate Months (Limit if current year)
             const monthLimit = (y === maxYear) ? maxMonth : 12;
             const months = Array.from({length: monthLimit}, (_, i) => i + 1);
 
@@ -268,7 +263,6 @@
                 onClose();
             };
 
-            // 🔥 Key Fix: Stop propagation of touch events to prevent pull-to-refresh
             const stopPropagation = (e) => e.stopPropagation();
 
             return (
@@ -289,10 +283,9 @@
                         </div>
                         
                         <div className="relative px-6 pb-6 pt-2">
-                            {/* 🔥 Visual Highlight Bar (Gray Background) */}
-                            <div className="absolute top-1/2 left-6 right-6 h-[44px] -translate-y-1/2 bg-gray-200 dark:bg-zinc-700 rounded-xl pointer-events-none z-0"></div>
+                            {/* 🔥 Visual Highlight Bar (Height 34px, rounded-lg) */}
+                            <div className="absolute top-1/2 left-4 right-4 h-[34px] -translate-y-1/2 bg-gray-200/80 dark:bg-white/10 rounded-lg pointer-events-none z-0"></div>
                             
-                            {/* Wheels - ONLY Year and Month, overflow-hidden to prevent wobble */}
                             <div className="flex relative z-10 w-full overflow-hidden">
                                 <WheelPicker 
                                     items={years} 
@@ -308,7 +301,6 @@
                                 />
                             </div>
 
-                            {/* Gradient Masks */}
                             <div className="absolute top-0 left-0 right-0 h-[80px] bg-gradient-to-b from-brand-card to-transparent pointer-events-none z-20"></div>
                             <div className="absolute bottom-0 left-0 right-0 h-[80px] bg-gradient-to-t from-brand-card to-transparent pointer-events-none z-20"></div>
                         </div>
