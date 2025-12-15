@@ -37,7 +37,9 @@
                         'slide-in-right': 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'slide-out-right': 'slideOutRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'fade-in': 'fadeIn 0.2s ease-out forwards',
+                        'fade-out': 'fadeOut 0.5s ease-in forwards',
                         'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     },
                     keyframes: {
                         slideInRight: {
@@ -51,6 +53,10 @@
                         fadeIn: {
                             '0%': { opacity: '0' },
                             '100%': { opacity: '1' },
+                        },
+                        fadeOut: {
+                            '0%': { opacity: '1' },
+                            '100%': { opacity: '0', visibility: 'hidden' },
                         },
                         slideUp: {
                             '0%': { transform: 'translateY(100%)' },
@@ -77,25 +83,39 @@
     <script type="module" src="https://esm.sh/run" defer></script>
 
     <style>
-        ::-webkit-scrollbar { display: none; }
-        
-        body {
+        /* 全局隐藏滚动条逻辑 - 核心修改 */
+        html, body, #root {
+            height: 100%;
+            width: 100%;
+            overflow: hidden; /* 禁止 html/body 滚动 */
             background-color: #000000;
+        }
+
+        /* 专门用于内部容器的无滚动条类 */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none; /* Chrome, Safari and Opera */
+        }
+
+        /* 保持 iOS 的弹性滚动体验 */
+        .ios-scroll {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-y: contain;
+        }
+
+        body {
             color: #FFFFFF;
             -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: none;
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-            overflow-x: hidden; 
         }
 
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
         .pt-safe { padding-top: env(safe-area-inset-top, 44px); }
         input:focus, textarea:focus { outline: none; }
-
-        .ios-scroll {
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior-y: contain;
-        }
 
         .page-container {
             position: absolute;
@@ -133,7 +153,7 @@
             Utensils, Car, ShoppingBag, Gamepad2, Home as HomeIcon, 
             HeartPulse, Banknote, FileText, TrendingUp, Calendar, 
             LayoutGrid, ArrowLeft, Video, MessageCircle, Wallet, ChevronDown, Layers,
-            Users, Settings, Clock, Filter, Check, Trophy
+            Users, Settings, Clock, Filter, Check, Trophy, Sparkles
         } from 'lucide-react';
         import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isSameDay, format, parseISO, getDaysInMonth, getISOWeek } from 'date-fns';
 
@@ -188,26 +208,6 @@
                 return ''; 
             }
         };
-        
-        const getDisplayDateHeader = (isoString) => {
-            const rawDate = getRawDateStr(isoString); 
-            if (!rawDate) return '未知日期';
-
-            const [y, m, d] = rawDate.split('-');
-            
-            const todayRaw = new Date().toISOString().split('T')[0];
-            const yesterdayDate = new Date();
-            yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-            const yesterdayRaw = yesterdayDate.toISOString().split('T')[0];
-
-            if (rawDate === todayRaw) return "今天";
-            if (rawDate === yesterdayRaw) return "昨天";
-            
-            const date = new Date(rawDate);
-            const weekDay = ['周日','周一','周二','周三','周四','周五','周六'][date.getUTCDay()];
-            
-            return `${parseInt(m)}月${parseInt(d)}日 ${weekDay}`;
-        };
 
         const Toast = ({ message }) => {
             if (!message) return null;
@@ -221,32 +221,40 @@
             );
         };
 
-        const MiniLineChart = ({ data }) => {
-            const maxVal = Math.max(...data.map(d => d.value), 100);
-            const points = data.map((d, i) => {
-                const x = (i / (data.length - 1)) * 100;
-                const y = 100 - (d.value / maxVal) * 80; // Keep in bottom area
-                return `${x},${y}`;
-            }).join(' ');
+        // --- Components ---
+        
+        // 🆕 Splash Screen Component
+        const SplashScreen = ({ onFinish }) => {
+            const [isFading, setIsFading] = useState(false);
+
+            useEffect(() => {
+                // Wait 2.2 seconds then start fading out
+                const timer1 = setTimeout(() => setIsFading(true), 2200);
+                // Remove from DOM after fade animation (0.5s)
+                const timer2 = setTimeout(onFinish, 2700);
+                return () => { clearTimeout(timer1); clearTimeout(timer2); };
+            }, [onFinish]);
 
             return (
-                <div className="w-full h-full relative">
-                    <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="overflow-visible">
-                        <defs>
-                            <linearGradient id="miniGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#2E5CFF" stopOpacity="0.3" />
-                                <stop offset="100%" stopColor="#2E5CFF" stopOpacity="0" />
-                            </linearGradient>
-                        </defs>
-                        <path d={`M 0,100 L ${points.split(' ').map(p => `L ${p.replace(',', ' ')}`).join(' ')} L 100,100 Z`} fill="url(#miniGradient)" />
-                        <polyline points={points} fill="none" stroke="#2E5CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
-                        <line x1="0" y1="50" x2="100" y2="50" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
-                    </svg>
+                <div className={`fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-between pb-safe pt-safe transition-opacity duration-500 ${isFading ? 'opacity-0' : 'opacity-100'}`}>
+                    <div className="flex-1 flex flex-col items-center justify-center">
+                        <div className="relative mb-6">
+                            <div className="absolute inset-0 bg-art-cyan blur-2xl opacity-20 animate-pulse-slow"></div>
+                            <div className="w-24 h-24 bg-[#1C1C1E] rounded-[28px] border border-white/10 flex items-center justify-center shadow-2xl relative z-10">
+                                <Wallet size={48} className="text-white" strokeWidth={1.5} />
+                            </div>
+                        </div>
+                        <h1 className="text-2xl font-bold text-white tracking-wide mb-2">AI 随手记</h1>
+                        <p className="text-art-textSub text-sm tracking-widest uppercase opacity-60">Smart Finance</p>
+                    </div>
+                    
+                    <div className="mb-12 flex flex-col items-center gap-4">
+                        <Loader2 className="animate-spin text-art-textSub" size={20} />
+                        <p className="text-[10px] text-[#333] font-mono">VERSION 1.0.2</p>
+                    </div>
                 </div>
             );
         };
-
-        // --- Components ---
 
         const MonthlyStats = ({ transactions, currentDate, onCategoryClick }) => {
             const [selectedIndex, setSelectedIndex] = useState(null); 
@@ -390,14 +398,9 @@
 
                         <div className="absolute top-0 left-0 w-full h-full z-20 flex items-end">
                              {chartData.map((d, i) => {
-                                 // Logic change: First, Last, and every 5th day
                                  const showLabel = i === 0 || i === chartData.length - 1 || (i + 1) % 5 === 0;
                                  const isSelected = selectedIndex === i;
-                                 
-                                 // Dynamic alignment: First=start, Last=end, Middle=center
                                  const justifyClass = i === 0 ? 'justify-start' : (i === chartData.length - 1 ? 'justify-end' : 'justify-center');
-                                 
-                                 // Dynamic origin for scaling: Left stays left, Right stays right
                                  const originClass = i === 0 ? 'origin-bottom-left' : (i === chartData.length - 1 ? 'origin-bottom-right' : 'origin-bottom');
 
                                  return (
@@ -420,7 +423,7 @@
                                             </div>
                                         )}
                                     </div>
-                                 );
+                                   );
                              })}
                         </div>
                     </div>
@@ -467,7 +470,6 @@
             );
         };
 
-        // Filter Sidebar Component (Right Side Drawer)
         const FilterSidebar = ({ isOpen, onClose, currentFilters, onApply }) => {
             const [localFilters, setLocalFilters] = useState(currentFilters);
 
@@ -580,7 +582,6 @@
             );
         };
 
-        // Filter Sheet Component (Bottom Sheet)
         const FilterSheet = ({ isOpen, onClose, dateRange, onModify }) => {
             if (!isOpen) return null;
             return (
@@ -607,11 +608,9 @@
             );
         };
 
-        // 🆕 TransactionGroup (Generic Accordion Group for Today/Week/Year)
         const TransactionGroup = ({ label, total, transactions, groupByDay, onViewEditor }) => {
             const [isExpanded, setIsExpanded] = useState(true);
 
-            // If we need to group by day internally
             const daysMap = useMemo(() => {
                 if (!groupByDay) return null;
                 const groups = {};
@@ -621,13 +620,11 @@
                     if (!groups[dateStr]) groups[dateStr] = [];
                     groups[dateStr].push(t);
                 });
-                // Sort days desc
                 return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
             }, [transactions, groupByDay]);
 
             return (
                 <div className="mb-6">
-                    {/* Header - Rounded Card */}
                     <div 
                         className="flex justify-between items-center py-4 px-4 bg-[#1C1C1E] rounded-[24px] transition-colors cursor-pointer mb-2"
                         onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}
@@ -648,15 +645,12 @@
 
                     {isExpanded && (
                         <div className="animate-fade-in px-1">
-                            {/* Scenario 1: Group By Day (Week/Year view) */}
                             {groupByDay && daysMap && daysMap.map(([dateStr, items]) => {
                                 const dObj = new Date(dateStr);
-                                const dayNum = dObj.getDate();
                                 const weekDay = ['周日','周一','周二','周三','周四','周五','周六'][dObj.getDay()];
                                 return (
                                     <div key={dateStr} className="mb-6">
                                         <div className="flex justify-between items-end px-2 mb-2 text-art-textSub">
-                                            {/* Updated date format here as requested */}
                                             <div className="text-[13px] font-medium">
                                                 {format(dObj, 'MM月dd日')} {weekDay}
                                             </div>
@@ -670,7 +664,6 @@
                                 );
                             })}
 
-                            {/* Scenario 2: Direct List (Today view) */}
                             {!groupByDay && (
                                 <div className="space-y-0 mt-2">
                                     {transactions.map(t => (
@@ -684,7 +677,6 @@
             );
         };
 
-        // Extracted Row Item for consistency
         const TransactionItem = ({ t, onClick }) => (
             <div 
                 onClick={onClick} 
@@ -711,7 +703,6 @@
             </div>
         );
 
-        // 1. Period Detail Page
         const PeriodPage = ({ title, type, total, allTransactions, onClose, initialCategory }) => {
             const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
             const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -786,7 +777,6 @@
                 }).sort((a,b) => b.date.localeCompare(a.date));
             }, [activeFilters, allTransactions]);
 
-            // 🆕 Logic to determine top-level groupings based on type
             const groupedData = useMemo(() => {
                 const groups = {}; 
                 
@@ -800,7 +790,6 @@
                     
                     if (type === 'today') {
                         key = dateStr;
-                        // For Today view, label is date
                         label = format(dObj, 'MM月dd日');
                     } else if (type === 'week') {
                         const year = dObj.getFullYear();
@@ -812,7 +801,6 @@
                         key = `${year}`;
                         label = `${year}年`;
                     } else {
-                        // Fallback (Month view or others)
                         const y = dObj.getFullYear();
                         const m = dObj.getMonth() + 1;
                         key = `${y}-${m}`;
@@ -826,7 +814,6 @@
                     groups[key].items.push(t);
                 });
 
-                // Sort keys desc
                 return Object.entries(groups).sort((a,b) => b[0].localeCompare(a[0])).map(([k,v]) => v);
             }, [list, type]);
 
@@ -844,8 +831,7 @@
             const finalTitle = (activeFilters.category === 'all' && type !== 'month') ? title : displayTitle;
 
             return (
-                <div className="page-container page-enter pb-safe flex flex-col z-[100] bg-[#000000]">
-                    {/* 1. Reduced Header Height: 140px */}
+                <div className="page-container page-enter pb-safe flex flex-col z-[100] bg-[#000000] no-scrollbar">
                     <div className="relative h-[140px] w-full overflow-hidden shrink-0">
                         <img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#000000]"></div>
@@ -890,7 +876,7 @@
                                             label={group.label}
                                             total={group.total}
                                             transactions={group.items}
-                                            groupByDay={type !== 'today'} // Don't group by day if already in 'Today' view
+                                            groupByDay={type !== 'today'}
                                             onViewEditor={(t) => { /* placeholder */ }}
                                         />
                                     ))
@@ -916,14 +902,13 @@
             );
         };
 
-        // Re-declaring MonthGroup for the 'Flow' tab usage in App
         const MonthGroup = ({ year, month, totalExpense, days, onViewEditor }) => {
             const [isExpanded, setIsExpanded] = useState(true);
             return (
                 <div className="mb-6">
                     <div 
                         className="flex justify-between items-center py-4 px-4 bg-[#1C1C1E] rounded-[24px] transition-colors cursor-pointer mb-2 sticky z-10"
-                        style={{ top: 'env(safe-area-inset-top)' }}
+                        style={{ top: '0px' }}
                         onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}
                     >
                         <div className="flex items-baseline gap-1.5">
@@ -944,12 +929,10 @@
                         <div className="animate-fade-in px-1">
                             {days.map(([dateStr, items]) => {
                                 const dObj = new Date(dateStr);
-                                const dayNum = dObj.getDate();
                                 const weekDay = ['周日','周一','周二','周三','周四','周五','周六'][dObj.getDay()];
                                 return (
                                     <div key={dateStr} className="mb-6">
                                         <div className="flex justify-between items-end px-2 mb-2 text-art-textSub">
-                                            {/* Updated date format here as requested */}
                                             <div className="text-[13px] font-medium">
                                                 {format(dObj, 'MM月dd日')} {weekDay}
                                             </div>
@@ -986,14 +969,14 @@
             };
 
             return (
-                <div className="page-container page-enter pb-safe flex flex-col z-[100] bg-art-bg ios-scroll">
+                <div className="page-container page-enter pb-safe flex flex-col z-[100] bg-art-bg ios-scroll no-scrollbar">
                     <div className="glass-nav pt-safe flex justify-between items-center px-4 h-[44px]">
                         <button onClick={onClose} className="text-art-textSub text-[15px]">取消</button>
                         <h3 className="font-bold text-[17px] text-white">{transaction ? '编辑' : '记一笔'}</h3>
                         <button onClick={handleSave} className="text-art-accent font-bold text-[15px]">保存</button>
                     </div>
                     
-                    <div className="p-4 flex-1 overflow-y-auto ios-scroll">
+                    <div className="p-4 flex-1 overflow-y-auto ios-scroll no-scrollbar">
                          <div className="bg-art-card rounded-[20px] px-5 py-4 flex items-center mt-2 border border-art-border focus-within:ring-2 focus-within:ring-art-accent/20 transition-all shadow-sm mb-6">
                             <span className="text-[24px] text-art-textSub mr-2 font-light">¥</span>
                             <input type="number" value={form.amount} onChange={(e) => setForm({...form, amount: e.target.value})} placeholder="0.00" className="w-full bg-transparent text-[32px] font-bold text-white placeholder-gray-600 h-[40px] font-mono" autoFocus={!transaction} />
@@ -1044,6 +1027,7 @@
         // --- Main App ---
 
         function App() {
+            const [showSplash, setShowSplash] = useState(true);
             const [activeTab, setActiveTab] = useState('home');
             const [transactions, setTransactions] = useState([]);
             const [loading, setLoading] = useState(false);
@@ -1053,11 +1037,12 @@
             const [currentTransaction, setCurrentTransaction] = useState(null); 
             const [toast, setToast] = useState(null);
             
-            const [view, setView] = useState({ name: 'main' }); // Router
+            const [view, setView] = useState({ name: 'main' }); 
             
             const [pullY, setPullY] = useState(0);
             const [isRefreshing, setIsRefreshing] = useState(false);
             const startY = useRef(0);
+            const scrollContainerRef = useRef(null);
             
             const [form, setForm] = useState({ amount: '', merchant: '', category: '餐饮', date: new Date().toISOString().split('T')[0], note: '' });
 
@@ -1082,12 +1067,23 @@
                 setLoading(false);
             };
 
-            const handleTouchStart = (e) => { if (window.scrollY === 0) startY.current = e.touches[0].clientY; };
-            const handleTouchMove = (e) => {
-                const delta = e.touches[0].clientY - startY.current;
-                if (window.scrollY === 0 && delta > 0) setPullY(delta * 0.4);
+            const handleTouchStart = (e) => { 
+                // Only enable pull-to-refresh if we are at the top of the container
+                if (scrollContainerRef.current && scrollContainerRef.current.scrollTop === 0) {
+                    startY.current = e.touches[0].clientY; 
+                } else {
+                    startY.current = -1; // disabled
+                }
             };
+
+            const handleTouchMove = (e) => {
+                if (startY.current === -1) return;
+                const delta = e.touches[0].clientY - startY.current;
+                if (delta > 0) setPullY(delta * 0.4);
+            };
+
             const handleTouchEnd = async () => {
+                if (startY.current === -1) return;
                 if (pullY > 60) {
                     setIsRefreshing(true); setPullY(60); haptic();
                     await fetchTransactions(); haptic(); setIsRefreshing(false); setPullY(0);
@@ -1183,21 +1179,33 @@
                 });
             };
 
+            if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
+
             if (view.name === 'editor') return <EditorPage transaction={view.transaction} onClose={()=>setView({name:'main'})} onSave={handleSave} onDelete={handleDelete} />;
             if (view.name === 'period') return <PeriodPage title={view.title} type={view.type} total={view.total} allTransactions={transactions} onClose={()=>setView({name:'main'})} initialCategory={view.initialCategory} />;
 
             return (
-                <div className="min-h-full bg-art-bg text-art-textMain font-sans pb-safe selection:bg-art-accent selection:text-black" 
-                     onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+                <div 
+                    className="h-full w-full bg-art-bg text-art-textMain font-sans selection:bg-art-accent selection:text-black relative overflow-hidden" 
+                    onTouchStart={handleTouchStart} 
+                    onTouchMove={handleTouchMove} 
+                    onTouchEnd={handleTouchEnd}
+                >
                     <Toast message={toast} />
-                    <div className="fixed top-[60px] left-0 w-full flex justify-center pointer-events-none z-[100] transition-opacity duration-300" style={{ transform: `translateY(${pullY * 0.5}px)`, opacity: pullY > 20 ? 1 : 0 }}>
+                    
+                    {/* Pull to refresh indicator */}
+                    <div className="absolute top-[60px] left-0 w-full flex justify-center pointer-events-none z-[100] transition-opacity duration-300" style={{ transform: `translateY(${pullY * 0.5}px)`, opacity: pullY > 20 ? 1 : 0 }}>
                         <div className="bg-[#2C2C2E] p-2.5 rounded-full shadow-lg border border-white/10"><Loader2 className={`text-white ${isRefreshing ? 'animate-spin' : ''}`} size={20} style={{ transform: `rotate(${pullY * 2}deg)` }} /></div>
                     </div>
 
-                    <main className="transition-transform duration-300 ease-out" style={{ transform: `translateY(${pullY}px)` }}>
+                    {/* MAIN SCROLL CONTAINER - Hidden Scrollbar Applied Here */}
+                    <main 
+                        ref={scrollContainerRef}
+                        className="h-full w-full overflow-y-auto no-scrollbar pb-safe transition-transform duration-300 ease-out" 
+                        style={{ transform: `translateY(${pullY}px)` }}
+                    >
                         {activeTab === 'home' && (
                             <div className="animate-fade-in">
-                                {/* Only header content is removed as requested */}
                                 <div className="pt-safe px-5 h-[20px] mb-2"></div>
 
                                 <div className="mx-4 h-[140px] rounded-[32px] relative overflow-hidden shadow-2xl mb-6 group">
@@ -1245,7 +1253,6 @@
 
                         {activeTab === 'flow' && (
                             <div className="pb-24 animate-fade-in">
-                                {/* Flow Header with Background Image - Full width, no rounded corners at top/sides to bleed */}
                                 <div className="relative h-[140px] w-full overflow-hidden shrink-0 mb-6">
                                     <img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#000000]"></div>
@@ -1259,7 +1266,6 @@
                                     </div>
                                 </div>
 
-                                {/* 2. List container with px-4 padding so full-width header works above */}
                                 <div className="px-4 space-y-4">
                                     {groupedByMonth.map((monthGroup) => (
                                         <MonthGroup 
