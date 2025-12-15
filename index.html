@@ -23,9 +23,11 @@
                     colors: {
                         art: {
                             bg: '#000000',      // 纯黑背景
-                            card: '#121212',    // 极深灰卡片
-                            cardLight: '#1E1E1E',
-                            accent: '#4ADE80',  // 绿色/青色点缀 (支出通常用红/绿，这里模仿截图的冷色调)
+                            card: '#1C1C1E',    // 极深灰卡片 (iOS System Gray 6)
+                            cardLight: '#2C2C2E', // 稍亮 (iOS System Gray 5)
+                            accent: '#4ADE80',  // 绿色/青色点缀
+                            cyan: '#2DD4BF',    // 图2中的青色
+                            blue: '#40C4FF',    // 仿图1的金额蓝
                             textMain: '#FFFFFF',
                             textSub: '#8E8E93',
                             border: '#2C2C2E',
@@ -33,16 +35,26 @@
                     },
                     animation: {
                         'slide-in-right': 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'slide-out-right': 'slideOutRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'fade-in': 'fadeIn 0.2s ease-out forwards',
+                        'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                     },
                     keyframes: {
                         slideInRight: {
                             '0%': { transform: 'translateX(100%)' },
                             '100%': { transform: 'translateX(0)' },
                         },
+                        slideOutRight: {
+                            '0%': { transform: 'translateX(0)' },
+                            '100%': { transform: 'translateX(100%)' },
+                        },
                         fadeIn: {
                             '0%': { opacity: '0' },
                             '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)' },
+                            '100%': { transform: 'translateY(0)' },
                         }
                     }
                 }
@@ -93,6 +105,18 @@
             -webkit-overflow-scrolling: touch;
         }
         .page-enter { animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .glass-nav {
+            background: rgba(18, 18, 18, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Custom date input styling */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            opacity: 0.5;
+        }
     </style>
 </head>
 <body>
@@ -108,9 +132,9 @@
             Utensils, Car, ShoppingBag, Gamepad2, Home as HomeIcon, 
             HeartPulse, Banknote, FileText, TrendingUp, Calendar, 
             LayoutGrid, ArrowLeft, Video, MessageCircle, Wallet, ChevronDown, Layers,
-            Users, Settings // Added missing imports
+            Users, Settings, Clock, Filter, Check, Trophy
         } from 'lucide-react';
-        import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isSameDay, format } from 'date-fns';
+        import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isSameDay, format, parseISO, getDaysInMonth, getISOWeek } from 'date-fns';
 
         const SUPABASE_URL = 'https://lsggbiatbucdhhrgftra.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzZ2diaWF0YnVjZGhocmdmdHJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4OTA0NzIsImV4cCI6MjA3OTQ2NjQ3Mn0.GcAkpXZAETeSBSXoptYYmrlquwab0EapH7E8b5HCN7w';
@@ -141,21 +165,53 @@
 
         const getCategoryColor = (category) => {
             switch (category) {
-                case '餐饮': return { bg: 'bg-[#FF9F0A]/20', text: 'text-[#FF9F0A]' }; 
+                case '餐饮': return { bg: 'bg-[#FF453A]/20', text: 'text-[#FF453A]' }; 
                 case '交通': return { bg: 'bg-[#0A84FF]/20', text: 'text-[#0A84FF]' }; 
-                case '购物': return { bg: 'bg-[#FF375F]/20', text: 'text-[#FF375F]' }; 
+                case '购物': return { bg: 'bg-[#FFD60A]/20', text: 'text-[#FFD60A]' }; 
                 case '娱乐': return { bg: 'bg-[#BF5AF2]/20', text: 'text-[#BF5AF2]' }; 
                 case '居住': return { bg: 'bg-[#64D2FF]/20', text: 'text-[#64D2FF]' }; 
-                case '医疗': return { bg: 'bg-[#FF453A]/20', text: 'text-[#FF453A]' }; 
+                case '医疗': return { bg: 'bg-[#FF375F]/20', text: 'text-[#FF375F]' }; 
                 case '工资': return { bg: 'bg-[#30D158]/20', text: 'text-[#30D158]' }; 
                 default: return { bg: 'bg-[#8E8E93]/20', text: 'text-[#8E8E93]' };    
             }
         };
 
+        const categoriesList = ['餐饮', '交通', '购物', '娱乐', '居住', '医疗', '工资', '其他'];
+
+        // --- Shared Helpers ---
+        const getRawDateStr = (isoString) => {
+            if (!isoString) return '';
+            try {
+                return isoString.split('T')[0];
+            } catch (e) {
+                return ''; 
+            }
+        };
+        
+        const getDisplayDateHeader = (isoString) => {
+            const rawDate = getRawDateStr(isoString); 
+            if (!rawDate) return '未知日期';
+
+            const [y, m, d] = rawDate.split('-');
+            
+            const todayRaw = new Date().toISOString().split('T')[0];
+            const yesterdayDate = new Date();
+            yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+            const yesterdayRaw = yesterdayDate.toISOString().split('T')[0];
+
+            if (rawDate === todayRaw) return "今天";
+            if (rawDate === yesterdayRaw) return "昨天";
+            
+            const date = new Date(rawDate);
+            const weekDay = ['周日','周一','周二','周三','周四','周五','周六'][date.getUTCDay()];
+            
+            return `${parseInt(m)}月${parseInt(d)}日 ${weekDay}`;
+        };
+
         const Toast = ({ message }) => {
             if (!message) return null;
             return (
-                <div className="fixed top-safe left-1/2 -translate-x-1/2 z-[100] mt-4 animate-fade-in pointer-events-none">
+                <div className="fixed top-safe left-1/2 -translate-x-1/2 z-[200] mt-4 animate-fade-in pointer-events-none">
                     <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#333] shadow-xl border border-white/10">
                         <CheckCircle size={16} className="text-[#30D158]" />
                         <span className="text-[13px] font-medium text-white">{message}</span>
@@ -164,7 +220,6 @@
             );
         };
 
-        // --- 📊 Mini Line Chart (For Dashboard) ---
         const MiniLineChart = ({ data }) => {
             const maxVal = Math.max(...data.map(d => d.value), 100);
             const points = data.map((d, i) => {
@@ -190,112 +245,692 @@
             );
         };
 
-        // --- Pages ---
+        // --- Components ---
 
-        // 1. Period Detail Page (Refined Header)
-        const PeriodPage = ({ title, type, total, allTransactions, onClose }) => {
-            const list = useMemo(() => {
-                const now = new Date();
-                let range;
-                if (type === 'today') range = { start: new Date(now.setHours(0,0,0,0)), end: new Date(now.setHours(23,59,59,999)) };
-                else if (type === 'week') range = { start: startOfWeek(new Date(), { weekStartsOn: 1 }), end: endOfWeek(new Date(), { weekStartsOn: 1 }) };
-                else if (type === 'year') range = { start: startOfYear(new Date()), end: endOfYear(new Date()) };
-                else return [];
+        const MonthlyStats = ({ transactions, currentDate, onCategoryClick }) => {
+            const [selectedIndex, setSelectedIndex] = useState(null); 
 
-                return allTransactions.filter(t => { 
-                    const d = new Date(t.date); 
-                    return d >= range.start && d <= range.end; 
-                }).sort((a,b) => new Date(b.date) - new Date(a.date));
-            }, [type, allTransactions]);
+            const { chartData, categoryData, totalMonthExpense, totalCount } = useMemo(() => {
+                const daysInM = endOfMonth(currentDate).getDate();
+                const monthStr = format(currentDate, 'yyyy-MM');
 
-            const grouped = useMemo(() => {
-                const g = {};
-                list.forEach(t => {
-                    const d = new Date(t.date).toLocaleDateString();
-                    if(!g[d]) g[d] = [];
-                    g[d].push(t);
+                const monthTrans = transactions.filter(t => {
+                    const dStr = getRawDateStr(t.date);
+                    return dStr.startsWith(monthStr);
                 });
-                return g;
-            }, [list]);
+
+                const totalMonthExpense = monthTrans.reduce((sum, t) => sum + Math.abs(Number(t.amount || 0)), 0);
+
+                const data = new Array(daysInM).fill(0).map((_, i) => ({
+                    day: i + 1,
+                    amount: 0,
+                    dateStr: format(new Date(currentDate.getFullYear(), currentDate.getMonth(), i + 1), 'MM.dd')
+                }));
+
+                monthTrans.forEach(t => {
+                    const dateStr = getRawDateStr(t.date);
+                    if (dateStr) {
+                        const d = new Date(dateStr).getDate(); 
+                        if (data[d-1]) data[d-1].amount += Math.abs(Number(t.amount || 0));
+                    }
+                });
+
+                const catStats = {};
+                monthTrans.forEach(t => {
+                    const amt = Math.abs(Number(t.amount || 0));
+                    const cat = t.category || '其他';
+                    if (!catStats[cat]) catStats[cat] = { count: 0, amount: 0 };
+                    catStats[cat].count += 1;
+                    catStats[cat].amount += amt;
+                });
+
+                const categories = Object.entries(catStats)
+                    .map(([name, val]) => ({ name, ...val, percent: totalMonthExpense ? (val.amount / totalMonthExpense) * 100 : 0 }))
+                    .sort((a, b) => b.amount - a.amount);
+
+                return { chartData: data, categoryData: categories, totalMonthExpense, totalCount: monthTrans.length };
+            }, [transactions, currentDate]);
+
+            useEffect(() => {
+                const today = new Date();
+                if (isSameDay(today, currentDate) || (today.getMonth() === currentDate.getMonth() && today.getFullYear() === currentDate.getFullYear())) {
+                    setSelectedIndex(today.getDate() - 1);
+                } else {
+                    setSelectedIndex(0);
+                }
+            }, [currentDate]);
+
+            const maxAmount = Math.max(...chartData.map(d => d.amount), 10); 
+            const yAxisMax = Math.ceil(maxAmount / 10) * 10;
+            const yAxisMid = yAxisMax / 2;
+
+            const selectedData = chartData[selectedIndex] || { amount: 0, day: 1 };
+
+            const getPoints = () => {
+                return chartData.map((d, i) => {
+                    const x = (i / (chartData.length - 1)) * 100;
+                    const y = 100 - (d.amount / yAxisMax) * 80; 
+                    return `${x},${y}`;
+                }).join(' ');
+            };
 
             return (
-                <div className="page-container page-enter pb-safe flex flex-col z-[100] bg-[#000000]">
-                    {/* Artistic Header Image */}
-                    <div className="relative h-[280px] w-full overflow-hidden shrink-0">
-                        <img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-[#000000]"></div>
-                        
-                        {/* NavBar inside Header (Unified) */}
-                        <div className="absolute top-0 left-0 right-0 pt-safe px-4 h-[100px] flex items-start justify-between z-20">
-                            <button onClick={onClose} className="p-2 -ml-2 text-white flex items-center gap-1 active:opacity-60 transition-opacity">
-                                <ArrowLeft size={24} /> 
-                                {/* 顶部标题直接带上日期 */}
-                                <span className="text-[18px] font-medium tracking-wide">{title}</span>
-                            </button>
-                            <button onClick={() => {}} className="p-2 text-white/90 active:opacity-60"><Plus size={26} /></button>
+                <div className="mx-4 mb-24 bg-[#1C1C1E] rounded-[24px] p-5 border border-white/5 shadow-2xl relative overflow-visible">
+                    <div className="text-[15px] font-bold text-white/90 mb-8">本月每日支出统计</div>
+
+                    <div className="h-[180px] w-full relative mb-6 select-none">
+                        {selectedIndex !== null && (
+                            <div 
+                                className="absolute -top-8 z-30 transition-all duration-200 transform -translate-x-1/2 pointer-events-none"
+                                style={{ left: `${(selectedIndex / (chartData.length - 1)) * 100}%` }}
+                            >
+                                <div className="bg-[#121212] px-2.5 py-1.5 rounded-lg border border-white/10 flex items-center gap-1.5 shadow-xl whitespace-nowrap">
+                                    <div className="w-2 h-2 rounded-full bg-art-cyan"></div>
+                                    <span className="text-[12px] font-medium text-white">支出 {formatMoney(selectedData.amount)}</span>
+                                    <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-[#121212] border-b border-r border-white/10 rotate-45"></div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                            <div className="relative w-full border-t border-dashed border-white/10">
+                                <span className="absolute -left-0 -top-2.5 text-[10px] text-art-textSub">{yAxisMax}</span>
+                            </div>
+                            <div className="relative w-full border-t border-dashed border-white/10">
+                                <span className="absolute -left-0 -top-2.5 text-[10px] text-art-textSub">{yAxisMid}</span>
+                            </div>
+                            <div className="relative w-full border-t border-white/10">
+                                <span className="absolute -left-0 -top-2.5 text-[10px] text-art-textSub">0</span>
+                            </div>
                         </div>
 
-                        {/* Summary Data */}
-                        <div className="absolute bottom-6 left-6 z-20">
-                            {/* Main Amount */}
-                            <div className="text-[48px] font-bold text-white font-mono tracking-tighter leading-none -ml-1 mb-2">-{formatMoney(total)}</div>
-                            
-                            {/* Stats Row (Income | Expense) */}
-                            <div className="flex items-center gap-4 text-[13px] text-white/80 font-medium bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 w-fit">
-                                <span>结余 -{formatMoney(total)}</span>
-                                <div className="w-[1px] h-3 bg-white/30"></div>
-                                <span className="opacity-70">收入 0.00</span>
-                                <div className="w-[1px] h-3 bg-white/30"></div>
-                                <span className="opacity-70">支出 {formatMoney(total)}</span>
+                        <div className="absolute inset-0 left-0 right-0 top-3 bottom-0 z-10">
+                             <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="overflow-visible">
+                                <defs>
+                                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#2DD4BF" stopOpacity="0.3" />
+                                        <stop offset="100%" stopColor="#2DD4BF" stopOpacity="0" />
+                                    </linearGradient>
+                                </defs>
+                                <path d={`M 0,100 L ${getPoints().split(' ').map(p => `L ${p.replace(',', ' ')}`).join(' ')} L 100,100 Z`} fill="url(#chartGradient)" />
+                                <polyline points={getPoints()} fill="none" stroke="#2DD4BF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                            </svg>
+                        </div>
+
+                        {selectedIndex !== null && (
+                            <div 
+                                className="absolute top-3 bottom-0 w-[1.5px] bg-[#2DD4BF] z-0 transition-all duration-200 pointer-events-none"
+                                style={{ left: `${(selectedIndex / (chartData.length - 1)) * 100}%` }}
+                            >
+                                <div 
+                                    className="absolute -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-[#1C1C1E] border-[2.5px] border-[#2DD4BF] rounded-full shadow-[0_0_0_2px_rgba(45,212,191,0.2)]" 
+                                    style={{ top: `${100 - (selectedData.amount / yAxisMax) * 80}%` }}
+                                ></div>
+                            </div>
+                        )}
+
+                        <div className="absolute top-0 left-0 w-full h-full z-20 flex items-end">
+                             {chartData.map((d, i) => {
+                                 const showLabel = i % 3 === 0 || i === chartData.length - 1;
+                                 const isSelected = selectedIndex === i;
+                                 
+                                 return (
+                                    <div 
+                                        key={i} 
+                                        className="flex-1 h-full flex items-end justify-center pb-[-20px] cursor-pointer group relative"
+                                        onClick={() => { setSelectedIndex(i); haptic('light'); }}
+                                    >
+                                        <div className="absolute inset-0 bg-transparent"></div>
+                                        
+                                        {(showLabel || isSelected) && (
+                                            <div className={`text-[9px] mb-[-24px] px-1.5 py-0.5 rounded-md transition-all duration-200 ${isSelected ? 'bg-black text-white font-bold z-30 shadow-lg scale-110' : 'text-art-textSub'}`}>
+                                                {d.dateStr}
+                                            </div>
+                                        )}
+                                    </div>
+                                 );
+                             })}
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between items-center mb-4 pt-6 border-t border-white/5">
+                        <div className="text-[14px] font-bold text-white/90">本月分类支出</div>
+                        <div className="text-[11px] text-art-textSub">
+                            记账笔数 <span className="text-white font-mono">{totalCount}</span> <span className="mx-2"></span> 总支出 <span className="text-art-cyan font-mono">{formatMoney(totalMonthExpense)}</span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        {categoryData.length === 0 ? (
+                            <div className="text-center text-art-textSub text-[12px] py-4">暂无分类数据</div>
+                        ) : (
+                            categoryData.map((cat, idx) => (
+                                <div key={cat.name} className="group active:opacity-60 transition-opacity cursor-pointer" onClick={() => onCategoryClick(cat.name)}>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-3">
+                                            <div className="text-[12px] font-bold text-art-textSub w-4 text-center font-mono">{idx + 1}</div>
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${getCategoryColor(cat.name).bg} ${getCategoryColor(cat.name).text}`}>
+                                                    {React.cloneElement(getCategoryIcon(cat.name), { size: 12 })}
+                                                </div>
+                                                <span className="text-[13px] text-white font-medium">{cat.name}</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-[11px] text-white font-mono">
+                                                {cat.percent.toFixed(2)}% <span className="text-art-textSub mx-1">•</span> {formatMoney(cat.amount)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3 pl-9">
+                                        <div className="flex-1 h-1.5 bg-[#2C2C2E] rounded-full overflow-hidden">
+                                            <div className="h-full bg-art-cyan rounded-full" style={{ width: `${cat.percent}%` }}></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // Filter Sidebar Component (Right Side Drawer)
+        const FilterSidebar = ({ isOpen, onClose, currentFilters, onApply }) => {
+            const [localFilters, setLocalFilters] = useState(currentFilters);
+
+            useEffect(() => {
+                if (isOpen) setLocalFilters(currentFilters);
+            }, [isOpen, currentFilters]);
+
+            const handleApply = () => {
+                onApply(localFilters);
+                onClose();
+            };
+
+            return (
+                <>
+                    <div 
+                        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[220] transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                        onClick={onClose}
+                    />
+                    
+                    <div className={`fixed inset-y-0 right-0 w-[85%] max-w-[320px] bg-[#1C1C1E] z-[230] transform transition-transform duration-300 ease-out shadow-2xl flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                        <div className="flex items-center justify-between p-4 border-b border-white/10 pt-safe">
+                            <button onClick={onClose} className="text-art-textSub">取消</button>
+                            <h3 className="text-[17px] font-bold text-white">筛选</h3>
+                            <button onClick={handleApply} className="text-art-accent font-bold">完成</button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                            <div>
+                                <div className="text-[13px] text-art-textSub mb-2 ml-1">时间范围</div>
+                                <div className="bg-[#2C2C2E] rounded-xl p-3 flex items-center justify-between gap-2">
+                                    <input 
+                                        type="date" 
+                                        className="bg-transparent text-white text-[14px] outline-none w-full text-center"
+                                        value={localFilters.startDate || ''}
+                                        onChange={(e) => setLocalFilters({...localFilters, startDate: e.target.value})}
+                                    />
+                                    <span className="text-art-textSub">-</span>
+                                    <input 
+                                        type="date" 
+                                        className="bg-transparent text-white text-[14px] outline-none w-full text-center"
+                                        value={localFilters.endDate || ''}
+                                        onChange={(e) => setLocalFilters({...localFilters, endDate: e.target.value})}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="text-[13px] text-art-textSub mb-2 ml-1">分类</div>
+                                <div className="flex flex-wrap gap-2">
+                                    <button 
+                                        onClick={() => setLocalFilters({...localFilters, category: 'all'})}
+                                        className={`px-3 py-1.5 rounded-lg text-[13px] border ${localFilters.category === 'all' ? 'bg-white text-black border-white' : 'bg-[#2C2C2E] text-white border-transparent'}`}
+                                    >
+                                        全部
+                                    </button>
+                                    {categoriesList.map(cat => (
+                                        <button 
+                                            key={cat}
+                                            onClick={() => setLocalFilters({...localFilters, category: cat})}
+                                            className={`px-3 py-1.5 rounded-lg text-[13px] border ${localFilters.category === cat ? 'bg-art-accent text-black border-art-accent' : 'bg-[#2C2C2E] text-white border-transparent'}`}
+                                        >
+                                            {cat}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="text-[13px] text-art-textSub mb-2 ml-1">金额区间</div>
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-[#2C2C2E] rounded-xl flex-1 px-3 py-2.5">
+                                        <input 
+                                            type="number" 
+                                            placeholder="最低" 
+                                            className="bg-transparent w-full text-white text-[14px] outline-none placeholder-white/20"
+                                            value={localFilters.minAmount || ''}
+                                            onChange={(e) => setLocalFilters({...localFilters, minAmount: e.target.value})}
+                                        />
+                                    </div>
+                                    <div className="w-2 h-[1px] bg-art-textSub"></div>
+                                    <div className="bg-[#2C2C2E] rounded-xl flex-1 px-3 py-2.5">
+                                        <input 
+                                            type="number" 
+                                            placeholder="最高" 
+                                            className="bg-transparent w-full text-white text-[14px] outline-none placeholder-white/20"
+                                            value={localFilters.maxAmount || ''}
+                                            onChange={(e) => setLocalFilters({...localFilters, maxAmount: e.target.value})}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="text-[13px] text-art-textSub mb-2 ml-1">备注关键词</div>
+                                <div className="bg-[#2C2C2E] rounded-xl px-3 py-2.5 flex items-center">
+                                    <Search size={16} className="text-art-textSub mr-2" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="搜索备注..." 
+                                        className="bg-transparent w-full text-white text-[14px] outline-none placeholder-white/20"
+                                        value={localFilters.keyword || ''}
+                                        onChange={(e) => setLocalFilters({...localFilters, keyword: e.target.value})}
+                                    />
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </>
+            );
+        };
+
+        // Filter Sheet Component (Bottom Sheet)
+        const FilterSheet = ({ isOpen, onClose, dateRange, onModify }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-[200] flex items-end justify-center">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
+                    <div className="relative w-full bg-[#1C1C1E] rounded-t-[24px] p-6 pb-safe animate-slide-up border-t border-white/10 shadow-2xl">
+                        <div className="flex justify-center items-center mb-8 relative">
+                            <h3 className="text-[17px] font-bold text-white">筛选条件</h3>
+                            <button onClick={onClose} className="absolute right-0 p-1 text-art-textSub active:opacity-60 bg-art-cardLight rounded-full"><X size={18} /></button>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 mb-10 pl-1">
+                            <div className="text-white"><Clock size={20} /></div>
+                            <span className="text-[15px] font-medium text-white/90">当前范围</span>
+                            <span className="text-[15px] text-white/90 font-mono ml-auto tracking-wide">{dateRange}</span>
+                        </div>
+                        
+                        <div className="flex gap-3">
+                            <button onClick={() => { onClose(); onModify('viewAll'); }} className="flex-1 py-3.5 bg-white text-black rounded-full font-bold text-[15px] active:scale-95 transition-transform shadow-lg">查看全部流水</button>
+                            <button onClick={() => { onClose(); onModify('openSidebar'); }} className="flex-1 py-3.5 bg-[#FF9F0A] text-white rounded-full font-bold text-[15px] active:scale-95 transition-transform shadow-lg">修改筛选条件</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 🆕 TransactionGroup (Generic Accordion Group for Today/Week/Year)
+        const TransactionGroup = ({ label, total, transactions, groupByDay, onViewEditor }) => {
+            const [isExpanded, setIsExpanded] = useState(true);
+
+            // If we need to group by day internally
+            const daysMap = useMemo(() => {
+                if (!groupByDay) return null;
+                const groups = {};
+                transactions.forEach(t => {
+                    const dateStr = getRawDateStr(t.date);
+                    if (!dateStr) return;
+                    if (!groups[dateStr]) groups[dateStr] = [];
+                    groups[dateStr].push(t);
+                });
+                // Sort days desc
+                return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
+            }, [transactions, groupByDay]);
+
+            return (
+                <div className="mb-6">
+                    {/* Header - Rounded Card */}
+                    <div 
+                        className="flex justify-between items-center py-4 px-4 bg-[#1C1C1E] rounded-[24px] transition-colors cursor-pointer mb-2"
+                        onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}
+                    >
+                        <div className="flex flex-col">
+                            <span className="text-[18px] font-bold text-white">{label}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="text-right">
+                                <div className="text-[11px] text-art-textSub opacity-60 mb-0.5">总支出</div>
+                                <div className="text-[14px] text-white font-medium">{formatMoney(total)}</div>
+                            </div>
+                            <div className={`transition-transform duration-200 text-art-textSub ${isExpanded ? 'rotate-180' : ''}`}>
+                                <ChevronDown size={18} />
                             </div>
                         </div>
                     </div>
 
-                    {/* Content Body */}
-                    <div className="flex-1 px-4 -mt-4 relative z-30">
+                    {isExpanded && (
+                        <div className="animate-fade-in px-1">
+                            {/* Scenario 1: Group By Day (Week/Year view) */}
+                            {groupByDay && daysMap && daysMap.map(([dateStr, items]) => {
+                                const dObj = new Date(dateStr);
+                                const dayNum = dObj.getDate();
+                                const weekDay = ['周日','周一','周二','周三','周四','周五','周六'][dObj.getDay()];
+                                return (
+                                    <div key={dateStr} className="mb-6">
+                                        <div className="flex justify-between items-end px-2 mb-2 text-art-textSub">
+                                            {/* Updated date format here as requested */}
+                                            <div className="text-[13px] font-medium">
+                                                {format(dObj, 'MM月dd日')} {weekDay}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-0">
+                                            {items.map(t => (
+                                                <TransactionItem key={t.id} t={t} onClick={() => onViewEditor(t)} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            {/* Scenario 2: Direct List (Today view) */}
+                            {!groupByDay && (
+                                <div className="space-y-0 mt-2">
+                                    {transactions.map(t => (
+                                        <TransactionItem key={t.id} t={t} onClick={() => onViewEditor(t)} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // Extracted Row Item for consistency
+        const TransactionItem = ({ t, onClick }) => (
+            <div 
+                onClick={onClick} 
+                className="flex items-center justify-between py-4 px-2 active:bg-white/5 rounded-xl transition-colors cursor-pointer"
+            >
+                <div className="flex items-center gap-4 overflow-hidden">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${getCategoryColor(t.category).bg} ${getCategoryColor(t.category).text}`}>
+                        {React.cloneElement(getCategoryIcon(t.category), { size: 18 })}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                        <div className="text-[15px] text-white font-bold truncate mb-1">
+                            {t.merchant || t.category}
+                        </div>
+                        <div className="text-[12px] text-[#666] font-normal truncate flex items-center gap-1.5">
+                            <span>{format(parseISO(t.date), 'HH:mm')}</span>
+                            <span>·</span>
+                            <span>{t.note || t.category}</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="text-[17px] text-art-blue font-bold shrink-0 ml-3 font-mono tracking-tight">
+                    {formatMoney(t.amount)}
+                </div>
+            </div>
+        );
+
+        // 1. Period Detail Page
+        const PeriodPage = ({ title, type, total, allTransactions, onClose, initialCategory }) => {
+            const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+            const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+            
+            const getInitialFilters = () => {
+                const now = new Date();
+                let startDate = '', endDate = '';
+                let cat = initialCategory || 'all'; 
+                
+                if (type === 'today') {
+                    startDate = endDate = format(now, 'yyyy-MM-dd');
+                } else if (type === 'week') {
+                    startDate = format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+                    endDate = format(endOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+                } else if (type === 'year') {
+                    startDate = format(startOfYear(now), 'yyyy-MM-dd');
+                    endDate = format(endOfYear(now), 'yyyy-MM-dd');
+                } else if (type === 'month') {
+                    startDate = format(startOfMonth(now), 'yyyy-MM-dd');
+                    endDate = format(endOfMonth(now), 'yyyy-MM-dd');
+                }
+
+                return {
+                    startDate,
+                    endDate,
+                    category: cat,
+                    minAmount: '',
+                    maxAmount: '',
+                    keyword: ''
+                };
+            };
+
+            const [activeFilters, setActiveFilters] = useState(getInitialFilters());
+
+            const handleSheetAction = (action) => {
+                if (action === 'viewAll') {
+                    setActiveFilters({
+                        startDate: '',
+                        endDate: '',
+                        category: 'all',
+                        minAmount: '',
+                        maxAmount: '',
+                        keyword: ''
+                    });
+                    haptic();
+                } else if (action === 'openSidebar') {
+                    setIsSidebarOpen(true);
+                    haptic();
+                }
+            };
+
+            const list = useMemo(() => {
+                return allTransactions.filter(t => {
+                    const rawDate = getRawDateStr(t.date);
+                    if (!rawDate) return false; 
+
+                    const amount = Math.abs(Number(t.amount || 0));
+                    
+                    if (activeFilters.startDate && rawDate < activeFilters.startDate) return false;
+                    if (activeFilters.endDate && rawDate > activeFilters.endDate) return false;
+                    if (activeFilters.category !== 'all' && t.category !== activeFilters.category) return false;
+                    if (activeFilters.minAmount && amount < Number(activeFilters.minAmount)) return false;
+                    if (activeFilters.maxAmount && amount > Number(activeFilters.maxAmount)) return false;
+                    if (activeFilters.keyword) {
+                        const note = (t.note || '').toLowerCase();
+                        const merchant = (t.merchant || '').toLowerCase();
+                        const kw = activeFilters.keyword.toLowerCase();
+                        if (!note.includes(kw) && !merchant.includes(kw)) return false;
+                    }
+
+                    return true;
+                }).sort((a,b) => b.date.localeCompare(a.date));
+            }, [activeFilters, allTransactions]);
+
+            // 🆕 Logic to determine top-level groupings based on type
+            const groupedData = useMemo(() => {
+                const groups = {}; 
+                
+                list.forEach(t => {
+                    const dateStr = getRawDateStr(t.date);
+                    if (!dateStr) return;
+                    const dObj = new Date(dateStr);
+                    
+                    let key = "";
+                    let label = "";
+                    
+                    if (type === 'today') {
+                        key = dateStr;
+                        // For Today view, label is date
+                        label = format(dObj, 'MM月dd日');
+                    } else if (type === 'week') {
+                        const year = dObj.getFullYear();
+                        const weekNum = getISOWeek(dObj);
+                        key = `${year}-W${weekNum}`;
+                        label = `第${weekNum}周`;
+                    } else if (type === 'year') {
+                        const year = dObj.getFullYear();
+                        key = `${year}`;
+                        label = `${year}年`;
+                    } else {
+                        // Fallback (Month view or others)
+                        const y = dObj.getFullYear();
+                        const m = dObj.getMonth() + 1;
+                        key = `${y}-${m}`;
+                        label = `${m}月`;
+                    }
+
+                    if (!groups[key]) {
+                        groups[key] = { label, total: 0, items: [] };
+                    }
+                    groups[key].total += Math.abs(Number(t.amount || 0));
+                    groups[key].items.push(t);
+                });
+
+                // Sort keys desc
+                return Object.entries(groups).sort((a,b) => b[0].localeCompare(a[0])).map(([k,v]) => v);
+            }, [list, type]);
+
+            const currentTotal = useMemo(() => {
+                return list.reduce((sum, t) => sum + Math.abs(Number(t.amount || 0)), 0);
+            }, [list]);
+
+            const displayTitle = useMemo(() => {
+                if (!activeFilters.startDate && !activeFilters.endDate) return "全部流水";
+                if (activeFilters.category !== 'all') return `${activeFilters.category}支出`;
+                if (activeFilters.startDate === activeFilters.endDate) return activeFilters.startDate;
+                return "筛选结果";
+            }, [activeFilters]);
+
+            const finalTitle = (activeFilters.category === 'all' && type !== 'month') ? title : displayTitle;
+
+            return (
+                <div className="page-container page-enter pb-safe flex flex-col z-[100] bg-[#000000]">
+                    {/* 1. Reduced Header Height: 140px */}
+                    <div className="relative h-[140px] w-full overflow-hidden shrink-0">
+                        <img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#000000]"></div>
+                        
+                        <div className="absolute top-0 left-0 right-0 pt-safe px-4 h-[60px] flex items-center justify-between z-20">
+                            <button onClick={onClose} className="p-2 -ml-2 text-white flex items-center gap-1 active:opacity-60 transition-opacity">
+                                <ArrowLeft size={24} /> 
+                                <span className="text-[17px] font-medium tracking-wide">{finalTitle}</span>
+                            </button>
+                            <button onClick={() => {}} className="p-2 text-white/90 active:opacity-60"><Plus size={26} /></button>
+                        </div>
+
+                        <div className="absolute bottom-4 left-6 z-20">
+                            <div className="text-[40px] font-bold text-white font-mono tracking-tighter leading-none -ml-1 mb-1">-{formatMoney(currentTotal)}</div>
+                            <div className="flex items-center gap-3 text-[12px] text-white/70 font-medium">
+                                <span className="opacity-70">支出 {formatMoney(currentTotal)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 px-4 -mt-2 relative z-30">
                         <div className="bg-[#121212] rounded-t-[24px] min-h-full border-t border-[#2C2C2E] p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-                            <div className="flex justify-between items-center mb-5 px-1 pt-1">
-                                <span className="text-[13px] text-art-textSub font-medium">已筛选，当前只展示部分流水</span>
-                                <span className="text-[13px] text-art-accent flex items-center gap-1">查看全部 <ChevronRight size={14}/></span>
+                            <div className="flex justify-between items-center mb-6 px-1 pt-1">
+                                <span className="text-[13px] text-art-textSub font-medium">
+                                    {list.length === allTransactions.length ? "展示所有流水" : "已筛选"}
+                                </span>
+                                <button onClick={() => { setIsFilterSheetOpen(true); haptic(); }} className="text-[13px] text-art-accent flex items-center gap-1 active:opacity-60">
+                                    {list.length === allTransactions.length ? "筛选" : "查看全部"} <ChevronRight size={14}/>
+                                </button>
                             </div>
 
-                            {/* List */}
-                            <div className="space-y-6">
-                                {Object.entries(grouped).length === 0 ? (
+                            <div className="space-y-6 pb-10">
+                                {groupedData.length === 0 ? (
                                     <div className="text-center py-20 text-art-textSub opacity-50 flex flex-col items-center">
                                         <div className="text-4xl mb-3">🍃</div>
                                         <div className="text-[15px]">暂无记录</div>
                                     </div>
                                 ) : (
-                                    Object.entries(grouped).map(([date, items]) => (
-                                        <div key={date}>
-                                            <div className="text-[13px] text-art-textSub font-bold mb-3 ml-1 uppercase tracking-wide">{date}</div>
-                                            <div className="space-y-3">
-                                                {items.map((t, idx) => (
-                                                    <div key={t.id} className="flex items-start gap-4 p-2 rounded-xl active:bg-white/5 transition-colors -mx-2">
-                                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${getCategoryColor(t.category).bg} ${getCategoryColor(t.category).text}`}>
-                                                            {getCategoryIcon(t.category)}
-                                                        </div>
-                                                        <div className="flex-1 border-b border-[#2C2C2E] pb-3.5">
-                                                            <div className="flex justify-between items-start mb-1">
-                                                                <span className="text-[16px] font-medium text-white">{t.merchant || t.category}</span>
-                                                                <span className="text-[17px] font-bold font-mono text-art-accent">-{formatMoney(t.amount)}</span>
-                                                            </div>
-                                                            <div className="text-[12px] text-art-textSub flex items-center gap-2">
-                                                                <span className="px-1.5 py-0.5 rounded-md bg-white/5">{t.category}</span>
-                                                                <span>{t.date.split('T')[1].substring(0,5)}</span>
-                                                                {t.note && <span>· {t.note}</span>}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
+                                    groupedData.map((group, idx) => (
+                                        <TransactionGroup 
+                                            key={idx}
+                                            label={group.label}
+                                            total={group.total}
+                                            transactions={group.items}
+                                            groupByDay={type !== 'today'} // Don't group by day if already in 'Today' view
+                                            onViewEditor={(t) => { /* placeholder */ }}
+                                        />
                                     ))
                                 )}
                             </div>
                         </div>
                     </div>
+
+                    <FilterSheet 
+                        isOpen={isFilterSheetOpen} 
+                        onClose={() => setIsFilterSheetOpen(false)} 
+                        dateRange={activeFilters.startDate ? `${activeFilters.startDate} 至 ${activeFilters.endDate || '今'}` : '全部时间'} 
+                        onModify={handleSheetAction}
+                    />
+
+                    <FilterSidebar 
+                        isOpen={isSidebarOpen}
+                        onClose={() => setIsSidebarOpen(false)}
+                        currentFilters={activeFilters}
+                        onApply={setActiveFilters}
+                    />
+                </div>
+            );
+        };
+
+        // Re-declaring MonthGroup for the 'Flow' tab usage in App
+        const MonthGroup = ({ year, month, totalExpense, days, onViewEditor }) => {
+            const [isExpanded, setIsExpanded] = useState(true);
+            return (
+                <div className="mb-6">
+                    <div 
+                        className="flex justify-between items-center py-4 px-4 bg-[#1C1C1E] rounded-[24px] transition-colors cursor-pointer mb-2"
+                        onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}
+                    >
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-[20px] font-bold text-white">{month}月</span>
+                            <span className="text-[13px] text-art-textSub">{year}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="text-right">
+                                <div className="text-[11px] text-art-textSub opacity-60 mb-0.5">总支出</div>
+                                <div className="text-[14px] text-white font-medium">{formatMoney(totalExpense)}</div>
+                            </div>
+                            <div className={`transition-transform duration-200 text-art-textSub ${isExpanded ? 'rotate-180' : ''}`}>
+                                <ChevronDown size={18} />
+                            </div>
+                        </div>
+                    </div>
+                    {isExpanded && (
+                        <div className="animate-fade-in px-1">
+                            {days.map(([dateStr, items]) => {
+                                const dObj = new Date(dateStr);
+                                const dayNum = dObj.getDate();
+                                const weekDay = ['周日','周一','周二','周三','周四','周五','周六'][dObj.getDay()];
+                                return (
+                                    <div key={dateStr} className="mb-6">
+                                        <div className="flex justify-between items-end px-2 mb-2 text-art-textSub">
+                                            {/* Updated date format here as requested */}
+                                            <div className="text-[13px] font-medium">
+                                                {format(dObj, 'MM月dd日')} {weekDay}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-0"> 
+                                            {items.map((t) => (
+                                                <TransactionItem key={t.id} t={t} onClick={() => onViewEditor(t)} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             );
         };
@@ -309,8 +944,7 @@
                 note: transaction ? (transaction.note || '') : '' 
             });
             const [loading, setLoading] = useState(false);
-            const categories = ['餐饮', '交通', '购物', '娱乐', '居住', '医疗', '工资', '其他'];
-
+            
             const handleSave = async () => {
                 if (!form.amount) return;
                 setLoading(true);
@@ -334,7 +968,7 @@
 
                         <h4 className="text-[13px] text-art-textSub font-medium mb-3 ml-1 uppercase">分类</h4>
                         <div className="grid grid-cols-4 gap-3 mb-6">
-                            {categories.map(cat => {
+                            {categoriesList.map(cat => {
                                 const color = getCategoryColor(cat);
                                 const isSelected = form.category === cat;
                                 return (
@@ -383,7 +1017,6 @@
             const [currentDate, setCurrentDate] = useState(new Date());
             
             const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-            const [isEditModalOpen, setIsEditModalOpen] = useState(false);
             const [currentTransaction, setCurrentTransaction] = useState(null); 
             const [toast, setToast] = useState(null);
             
@@ -394,7 +1027,6 @@
             const startY = useRef(0);
             
             const [form, setForm] = useState({ amount: '', merchant: '', category: '餐饮', date: new Date().toISOString().split('T')[0], note: '' });
-            const categories = ['餐饮', '交通', '购物', '娱乐', '居住', '医疗', '工资', '其他'];
 
             const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2000); };
 
@@ -406,10 +1038,14 @@
 
             const fetchTransactions = async () => {
                 if (!isRefreshing) setLoading(true);
-                const start = startOfYear(currentDate);
-                const end = endOfYear(currentDate);
-                const { data, error } = await supabase.from('transactions').select('*').gte('date', start.toISOString()).lte('date', end.toISOString()).order('date', { ascending: false });
-                if (!error) setTransactions(data || []);
+                try {
+                    const start = startOfYear(currentDate);
+                    const end = endOfYear(currentDate);
+                    const { data, error } = await supabase.from('transactions').select('*').gte('date', start.toISOString()).lte('date', end.toISOString()).order('date', { ascending: false });
+                    if (!error) setTransactions(data || []);
+                } catch(e) {
+                    console.error("Fetch error:", e);
+                }
                 setLoading(false);
             };
 
@@ -432,7 +1068,7 @@
                 if (isEdit) await supabase.from('transactions').update(payload).eq('id', currentTransaction.id);
                 else await supabase.from('transactions').insert([payload]);
                 showToast(isEdit ? "已更新" : "记账成功");
-                setIsAddModalOpen(false); setIsEditModalOpen(false);
+                setIsAddModalOpen(false); 
                 if (!isEdit) setForm({ ...form, amount: '', merchant: '', note: '' });
                 setLoading(false);
             };
@@ -446,47 +1082,76 @@
 
             const stats = useMemo(() => {
                 const now = new Date();
-                const dayRange = { start: new Date(now.setHours(0,0,0,0)), end: new Date(now.setHours(23,59,59,999)) };
-                const weekRange = { start: startOfWeek(new Date(), { weekStartsOn: 1 }), end: endOfWeek(new Date(), { weekStartsOn: 1 }) };
-                const monthRange = { start: startOfMonth(currentDate), end: endOfMonth(currentDate) };
-                const yearRange = { start: startOfYear(currentDate), end: endOfYear(currentDate) };
-                const calc = (range) => transactions.filter(t => new Date(t.date) >= range.start && new Date(t.date) <= range.end).reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
-                const monthTotal = calc(monthRange);
-                const todayTotal = calc(dayRange);
-                const weekTotal = calc(weekRange);
-                const yearTotal = calc(yearRange);
+                const todayStr = format(now, 'yyyy-MM-dd');
+                const startOfWeekStr = format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+                const endOfWeekStr = format(endOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+                const currentMonthStr = format(now, 'yyyy-MM');
+                const currentYearStr = format(now, 'yyyy');
                 
-                const trend = [];
-                const daysInMonth = monthRange.end.getDate();
-                for(let i=1; i<=daysInMonth; i++) {
-                    const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), i);
-                    const dayVal = transactions.filter(t => isSameDay(new Date(t.date), d)).reduce((s,t) => s + Math.abs(Number(t.amount)), 0);
-                    trend.push({ value: dayVal, date: d });
-                }
-                return { monthTotal, todayTotal, weekTotal, yearTotal, trend };
-            }, [transactions, currentDate]);
+                const sum = (list) => list.reduce((acc, t) => acc + Math.abs(Number(t.amount || 0)), 0);
 
-            // Grouped list for Flow view
-            const groupedTransactions = useMemo(() => {
-                const groups = {};
-                transactions.forEach(t => {
-                    const date = new Date(t.date);
-                    const today = new Date();
-                    let header = `${date.getMonth() + 1}月${date.getDate()}日`;
-                    if (date.toDateString() === today.toDateString()) header = "今天";
-                    else if (date.toDateString() === new Date(today.setDate(today.getDate()-1)).toDateString()) header = "昨天";
-                    const weekDay = ['周日','周一','周二','周三','周四','周五','周六'][date.getDay()];
-                    if (header !== "今天" && header !== "昨天") header += ` ${weekDay}`;
-                    if (!groups[header]) groups[header] = { total: 0, items: [] };
-                    groups[header].items.push(t);
-                    groups[header].total += Math.abs(Number(t.amount));
+                const todayTrans = transactions.filter(t => getRawDateStr(t.date) === todayStr);
+                
+                const weekTrans = transactions.filter(t => {
+                    const d = getRawDateStr(t.date);
+                    return d >= startOfWeekStr && d <= endOfWeekStr;
                 });
-                return groups;
+                
+                const monthTrans = transactions.filter(t => getRawDateStr(t.date).startsWith(currentMonthStr));
+                const yearTrans = transactions.filter(t => getRawDateStr(t.date).startsWith(currentYearStr));
+
+                return {
+                    monthTotal: sum(monthTrans),
+                    todayTotal: sum(todayTrans),
+                    weekTotal: sum(weekTrans),
+                    yearTotal: sum(yearTrans)
+                };
             }, [transactions]);
 
+            const groupedByMonth = useMemo(() => {
+                const groups = {}; // Key: 'YYYY-MM'
+                transactions.forEach(t => {
+                    const dateStr = getRawDateStr(t.date);
+                    if (!dateStr) return;
+                    const [y, m, d] = dateStr.split('-');
+                    const monthKey = `${y}-${m}`;
+                    
+                    if (!groups[monthKey]) {
+                        groups[monthKey] = {
+                            year: y,
+                            month: m,
+                            totalExpense: 0,
+                            days: {} // Key: 'YYYY-MM-DD'
+                        };
+                    }
+                    
+                    groups[monthKey].totalExpense += Math.abs(Number(t.amount || 0));
+                    
+                    if (!groups[monthKey].days[dateStr]) {
+                        groups[monthKey].days[dateStr] = [];
+                    }
+                    groups[monthKey].days[dateStr].push(t);
+                });
+                
+                return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0])).map(([key, data]) => ({
+                    key,
+                    ...data,
+                    daysSorted: Object.entries(data.days).sort((a, b) => b[0].localeCompare(a[0]))
+                }));
+            }, [transactions]);
+
+            const handleCategoryClick = (category) => {
+                setView({ 
+                    name: 'period', 
+                    title: `本月·${category}`, 
+                    type: 'month', 
+                    total: 0, 
+                    initialCategory: category 
+                });
+            };
+
             if (view.name === 'editor') return <EditorPage transaction={view.transaction} onClose={()=>setView({name:'main'})} onSave={handleSave} onDelete={handleDelete} />;
-            // 🆕 Updated Period Page with Dynamic Title (Date Range)
-            if (view.name === 'period') return <PeriodPage title={view.title} type={view.type} total={view.total} allTransactions={transactions} onClose={()=>setView({name:'main'})} />;
+            if (view.name === 'period') return <PeriodPage title={view.title} type={view.type} total={view.total} allTransactions={transactions} onClose={()=>setView({name:'main'})} initialCategory={view.initialCategory} />;
 
             return (
                 <div className="min-h-full bg-art-bg text-art-textMain font-sans pb-safe selection:bg-art-accent selection:text-black" 
@@ -499,24 +1164,20 @@
                     <main className="transition-transform duration-300 ease-out" style={{ transform: `translateY(${pullY}px)` }}>
                         {activeTab === 'home' && (
                             <div className="animate-fade-in">
-                                <div className="pt-safe px-5 h-[50px] flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2"><span className="text-[18px] font-bold text-white">标准账本</span><ChevronDown size={16} className="text-art-textSub" /></div>
-                                    <div className="w-8 h-8 rounded-full bg-art-cardLight flex items-center justify-center"><img src="https://ui-avatars.com/api/?name=User&background=random" className="w-8 h-8 rounded-full opacity-80" /></div>
-                                </div>
+                                {/* Only header content is removed as requested */}
+                                <div className="pt-safe px-5 h-[20px] mb-2"></div>
 
-                                <div className="mx-4 h-[220px] rounded-[32px] relative overflow-hidden shadow-2xl mb-6 group">
+                                <div className="mx-4 h-[170px] rounded-[32px] relative overflow-hidden shadow-2xl mb-6 group">
                                     <img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" />
                                     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/80"></div>
                                     <div className="absolute top-6 left-6 z-10">
                                         <div className="text-[14px] text-white/70 font-medium mb-1">本月收支统计</div>
                                         <div className="text-[12px] text-white/50">总支出</div>
                                         <div className="text-[42px] font-bold text-white font-mono tracking-tight -mt-1">{formatMoney(stats.monthTotal)}</div>
-                                        <div className="flex items-center gap-4 mt-2 text-[12px] text-white/60"><span>总收入 0.00</span><span>|</span><span>结余 -{formatMoney(stats.monthTotal)}</span></div>
                                     </div>
                                 </div>
 
                                 <div className="mx-4 space-y-3 mb-6">
-                                    {/* 🆕 Clickable Summary Rows with Generated Titles */}
                                     <div onClick={() => setView({ name: 'period', title: `今天 ${format(new Date(), 'M月d日')}`, type: 'today', total: stats.todayTotal })} className="bg-art-card p-4 rounded-[20px] flex items-center justify-between border border-white/5 active:bg-white/10 transition-colors cursor-pointer">
                                         <div className="flex items-center gap-3"><div className="w-1.5 h-8 bg-green-500 rounded-full shadow-[0_0_10px_rgba(74,222,128,0.5)]"></div><div><div className="text-[15px] font-bold text-white">今天</div><div className="text-[12px] text-art-textSub">{new Date().getMonth()+1}月{new Date().getDate()}日</div></div></div>
                                         <div className="text-right"><div className="text-[12px] text-art-textSub">总支出</div><div className="text-[15px] font-mono text-art-accent">{formatMoney(stats.todayTotal)}</div></div>
@@ -527,40 +1188,62 @@
                                         const end = endOfWeek(new Date(), { weekStartsOn: 1 });
                                         setView({ name: 'period', title: `本周 ${format(start, 'M.d')}-${format(end, 'M.d')}`, type: 'week', total: stats.weekTotal });
                                     }} className="bg-art-card p-4 rounded-[20px] flex items-center justify-between border border-white/5 active:bg-white/10 transition-colors cursor-pointer">
-                                        <div className="flex items-center gap-3"><div className="w-1.5 h-8 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div><div><div className="text-[15px] font-bold text-white">本周</div><div className="text-[12px] text-art-textSub">12月08日 - 12月14日</div></div></div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-1.5 h-8 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+                                            <div>
+                                                <div className="text-[15px] font-bold text-white">本周</div>
+                                                <div className="text-[12px] text-art-textSub">
+                                                    {format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'MM月dd日')} - {format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'MM月dd日')}
+                                                </div>
+                                            </div>
+                                        </div>
                                         <div className="text-right"><div className="text-[12px] text-art-textSub">总支出</div><div className="text-[15px] font-mono text-art-accent">{formatMoney(stats.weekTotal)}</div></div>
                                     </div>
 
                                     <div onClick={() => setView({ name: 'period', title: `本年 ${new Date().getFullYear()}`, type: 'year', total: stats.yearTotal })} className="bg-art-card p-4 rounded-[20px] flex items-center justify-between border border-white/5 active:bg-white/10 transition-colors cursor-pointer">
-                                        <div className="flex items-center gap-3"><div className="w-1.5 h-8 bg-yellow-500 rounded-full shadow-[0_0_10px_rgba(234,179,8,0.5)]"></div><div><div className="text-[15px] font-bold text-white">本年</div><div className="text-[12px] text-art-textSub">2025年</div></div></div>
+                                        <div className="flex items-center gap-3"><div className="w-1.5 h-8 bg-yellow-500 rounded-full shadow-[0_0_10px_rgba(234,179,8,0.5)]"></div><div><div className="text-[15px] font-bold text-white">本年</div><div className="text-[12px] text-art-textSub">{new Date().getFullYear()}年</div></div></div>
                                         <div className="text-right"><div className="text-[12px] text-art-textSub">总支出</div><div className="text-[15px] font-mono text-art-accent">{formatMoney(stats.yearTotal)}</div></div>
                                     </div>
                                 </div>
 
-                                <div className="mx-4 mb-24 bg-art-card rounded-[24px] p-5 border border-white/5">
-                                    <div className="flex justify-between items-center mb-4"><div className="text-[14px] font-bold text-white">本月每日支出统计</div><div className="text-[12px] text-art-textSub flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-art-accent"></div> 支出 {formatMoney(stats.monthTotal)}</div></div>
-                                    <div className="h-[100px] w-full relative"><MiniLineChart data={stats.trend} /><div className="absolute bottom-0 left-0 right-0 flex justify-between text-[10px] text-art-textSub mt-2 pt-2 border-t border-white/5"><span>01</span><span>10</span><span>20</span><span>30</span></div></div>
-                                </div>
+                                <MonthlyStats transactions={transactions} currentDate={currentDate} onCategoryClick={handleCategoryClick} />
                             </div>
                         )}
 
                         {activeTab === 'flow' && (
-                            <div className="pt-safe px-4 pb-24 animate-fade-in">
-                                <h2 className="text-[24px] font-bold text-white mb-6 mt-2">账单流水</h2>
-                                <div className="space-y-4">
-                                    {Object.entries(groupedTransactions).map(([header, group]) => (
-                                        <div key={header}>
-                                            <div className="flex justify-between items-end px-2 mb-2"><h3 className="text-[13px] font-bold text-art-textSub">{header}</h3><span className="text-[12px] text-art-textSub">支 {formatMoney(group.total)}</span></div>
-                                            <div className="bg-art-card rounded-[18px] overflow-hidden border border-white/5">
-                                                {group.items.map((t, idx) => (
-                                                    <div key={t.id} onClick={() => setView({ name: 'editor', transaction: t })} className="relative group active:bg-white/5 transition-colors cursor-pointer">
-                                                        <div className="flex items-center px-4 py-4"><div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${getCategoryColor(t.category).bg} ${getCategoryColor(t.category).text}`}>{getCategoryIcon(t.category)}</div><div className="flex-1 min-w-0 mr-4"><p className="text-[15px] font-medium text-white truncate mb-0.5">{t.merchant || t.category}</p><p className="text-[12px] text-art-textSub truncate">{t.date.split('T')[1].substring(0,5)} · {t.note || t.category}</p></div><div className="text-right"><p className="text-[16px] font-bold text-art-textMain font-mono">{formatMoney(t.amount)}</p></div></div>
-                                                        {idx !== group.items.length - 1 && <div className="absolute bottom-0 left-[70px] right-0 h-[1px] bg-[#2C2C2E]"></div>}
-                                                    </div>
-                                                ))}
-                                            </div>
+                            <div className="pt-safe pb-24 animate-fade-in">
+                                {/* Flow Header with Background Image - Full width, no rounded corners at top/sides to bleed */}
+                                <div className="relative h-[140px] w-full overflow-hidden shrink-0 mb-6">
+                                    <img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#000000]"></div>
+                                    
+                                    <div className="absolute top-6 left-6 z-10">
+                                        <div className="text-[18px] font-bold text-white mb-4">账单流水</div>
+                                        <div className="text-[12px] text-white/60 mb-1">总支出</div>
+                                        <div className="text-[40px] font-bold text-white font-mono tracking-tighter leading-none -ml-1">
+                                            -{formatMoney(transactions.reduce((acc, t) => acc + Math.abs(Number(t.amount)), 0))}
                                         </div>
+                                    </div>
+                                </div>
+
+                                {/* 2. List container with px-4 padding so full-width header works above */}
+                                <div className="px-4 space-y-4">
+                                    {groupedByMonth.map((monthGroup) => (
+                                        <MonthGroup 
+                                            key={monthGroup.key}
+                                            year={monthGroup.year}
+                                            month={monthGroup.month}
+                                            totalExpense={monthGroup.totalExpense}
+                                            days={monthGroup.daysSorted}
+                                            onViewEditor={(t) => setView({ name: 'editor', transaction: t })}
+                                        />
                                     ))}
+                                    {transactions.length === 0 && (
+                                         <div className="flex flex-col items-center justify-center pt-20 opacity-40">
+                                            <div className="text-4xl mb-3">🍃</div>
+                                            <p className="text-art-textSub">暂无流水记录</p>
+                                         </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -586,7 +1269,7 @@
                                 <div className="space-y-4">
                                     <div className="bg-[#2C2C2E] p-4 rounded-2xl flex items-center"><span className="text-2xl mr-3 text-white/50">¥</span><input autoFocus type="number" className="bg-transparent text-3xl font-bold text-white w-full outline-none" placeholder="0.00" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} /></div>
                                     <div className="grid grid-cols-4 gap-3">
-                                        {categories.map(c => (
+                                        {categoriesList.map(c => (
                                             <button key={c} onClick={() => setForm({...form, category: c})} className={`py-2 rounded-xl text-xs ${form.category === c ? 'bg-white text-black' : 'bg-[#2C2C2E] text-gray-400'}`}>{c}</button>
                                         ))}
                                     </div>
