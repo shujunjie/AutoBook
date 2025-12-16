@@ -34,12 +34,14 @@
                         }
                     },
                     animation: {
-                        'slide-in-right': 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'slide-in-right': 'slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'slide-out-right': 'slideOutRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                        'fade-in': 'fadeIn 0.2s ease-out forwards',
+                        'fade-in': 'fadeIn 0.4s ease-out forwards',
                         'fade-out': 'fadeOut 0.5s ease-in forwards',
-                        'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'slide-up-stagger': 'slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-in': 'bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards', // 🆕
                     },
                     keyframes: {
                         slideInRight: {
@@ -61,6 +63,14 @@
                         slideUp: {
                             '0%': { transform: 'translateY(100%)' },
                             '100%': { transform: 'translateY(0)' },
+                        },
+                        slideUpFade: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        bounceIn: {
+                            '0%': { transform: 'scale(0.8)', opacity: '0' },
+                            '100%': { transform: 'scale(1)', opacity: '1' },
                         }
                     }
                 }
@@ -132,7 +142,7 @@
             z-index: 50;
             -webkit-overflow-scrolling: touch;
         }
-        .page-enter { animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .page-enter { animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .glass-nav {
             background: rgba(18, 18, 18, 0.8);
             backdrop-filter: blur(20px);
@@ -159,7 +169,7 @@
             Utensils, Car, ShoppingBag, Gamepad2, Home as HomeIcon, 
             HeartPulse, Banknote, FileText, TrendingUp, Calendar, 
             LayoutGrid, ArrowLeft, Video, MessageCircle, Wallet, ChevronDown, Layers,
-            Users, Settings, Clock, Filter, Check, Trophy, Sparkles
+            Users, Settings, Clock, Filter, Check, Trophy, Sparkles, Tag, PenLine
         } from 'lucide-react';
         import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isSameDay, format, parseISO, getDaysInMonth, getISOWeek } from 'date-fns';
 
@@ -192,14 +202,14 @@
 
         const getCategoryColor = (category) => {
             switch (category) {
-                case '餐饮': return { bg: 'bg-[#FF453A]/20', text: 'text-[#FF453A]' }; 
-                case '交通': return { bg: 'bg-[#0A84FF]/20', text: 'text-[#0A84FF]' }; 
-                case '购物': return { bg: 'bg-[#FFD60A]/20', text: 'text-[#FFD60A]' }; 
-                case '娱乐': return { bg: 'bg-[#BF5AF2]/20', text: 'text-[#BF5AF2]' }; 
-                case '居住': return { bg: 'bg-[#64D2FF]/20', text: 'text-[#64D2FF]' }; 
-                case '医疗': return { bg: 'bg-[#FF375F]/20', text: 'text-[#FF375F]' }; 
-                case '工资': return { bg: 'bg-[#30D158]/20', text: 'text-[#30D158]' }; 
-                default: return { bg: 'bg-[#8E8E93]/20', text: 'text-[#8E8E93]' };    
+                case '餐饮': return { bg: 'bg-[#FF453A]/20', text: 'text-[#FF453A]', gradient: 'from-[#FF453A]/80 to-[#FF453A]/10' }; 
+                case '交通': return { bg: 'bg-[#0A84FF]/20', text: 'text-[#0A84FF]', gradient: 'from-[#0A84FF]/80 to-[#0A84FF]/10' }; 
+                case '购物': return { bg: 'bg-[#FFD60A]/20', text: 'text-[#FFD60A]', gradient: 'from-[#FFD60A]/80 to-[#FFD60A]/10' }; 
+                case '娱乐': return { bg: 'bg-[#BF5AF2]/20', text: 'text-[#BF5AF2]', gradient: 'from-[#BF5AF2]/80 to-[#BF5AF2]/10' }; 
+                case '居住': return { bg: 'bg-[#64D2FF]/20', text: 'text-[#64D2FF]', gradient: 'from-[#64D2FF]/80 to-[#64D2FF]/10' }; 
+                case '医疗': return { bg: 'bg-[#FF375F]/20', text: 'text-[#FF375F]', gradient: 'from-[#FF375F]/80 to-[#FF375F]/10' }; 
+                case '工资': return { bg: 'bg-[#30D158]/20', text: 'text-[#30D158]', gradient: 'from-[#30D158]/80 to-[#30D158]/10' }; 
+                default: return { bg: 'bg-[#8E8E93]/20', text: 'text-[#8E8E93]', gradient: 'from-[#8E8E93]/80 to-[#8E8E93]/10' };    
             }
         };
 
@@ -236,7 +246,6 @@
             );
         };
 
-        // Custom Confirm Dialog
         const ConfirmDialog = ({ isOpen, onCancel, onConfirm, title = "确认", message = "操作无法撤销" }) => {
             if (!isOpen) return null;
             return (
@@ -266,6 +275,23 @@
             );
         };
 
+        const Skeleton = () => (
+            <div className="animate-pulse space-y-5 px-1 mt-2">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                    <div key={i} className="flex items-center justify-between py-2">
+                        <div className="flex items-center gap-4 w-full">
+                            <div className="w-10 h-10 rounded-full bg-white/5"></div>
+                            <div className="space-y-2 flex-1">
+                                <div className="h-4 w-1/3 bg-white/5 rounded"></div>
+                                <div className="h-3 w-1/4 bg-white/5 rounded"></div>
+                            </div>
+                            <div className="h-5 w-16 bg-white/5 rounded"></div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+
         // --- Components ---
         
         const SplashScreen = ({ onFinish }) => {
@@ -292,14 +318,16 @@
                     
                     <div className="mb-12 flex flex-col items-center gap-4">
                         <Loader2 className="animate-spin text-art-textSub" size={20} />
-                        <p className="text-[10px] text-[#333] font-mono">VERSION 1.0.5</p>
+                        <p className="text-[10px] text-[#333] font-mono">VERSION 1.0.9</p>
                     </div>
                 </div>
             );
         };
 
         const MonthlyStats = ({ transactions, currentDate, onCategoryClick }) => {
+            // ... (MonthlyStats Code Remains Unchanged)
             const [selectedIndex, setSelectedIndex] = useState(null); 
+            const chartRef = useRef(null);
 
             const { chartData, categoryData, totalMonthExpense, totalCount } = useMemo(() => {
                 const daysInM = endOfMonth(currentDate).getDate();
@@ -351,10 +379,25 @@
                 }
             }, [currentDate]);
 
+            const handleTouch = (e) => {
+                if (!chartRef.current) return;
+                const touch = e.touches[0];
+                const rect = chartRef.current.getBoundingClientRect();
+                const x = touch.clientX - rect.left;
+                const width = rect.width;
+                const totalBars = chartData.length;
+                let newIndex = Math.floor((x / width) * totalBars);
+                if (newIndex < 0) newIndex = 0;
+                if (newIndex >= totalBars) newIndex = totalBars - 1;
+                if (newIndex !== selectedIndex) {
+                    setSelectedIndex(newIndex);
+                    haptic('light');
+                }
+            };
+
             const maxAmount = Math.max(...chartData.map(d => d.amount), 10); 
             const yAxisMax = Math.ceil(maxAmount / 10) * 10;
             const yAxisMid = yAxisMax / 2;
-
             const selectedData = chartData[selectedIndex] || { amount: 0, day: 1 };
 
             const getPoints = () => {
@@ -381,39 +424,32 @@
                 <div className="mx-4 mb-24 bg-[#1C1C1E] rounded-[24px] p-5 border border-white/5 shadow-2xl relative overflow-visible">
                     <div className="text-[15px] font-bold text-white/90 mb-8">本月每日支出统计</div>
 
-                    <div className="h-[180px] w-full relative mb-6 select-none">
+                    <div 
+                        ref={chartRef}
+                        className="h-[180px] w-full relative mb-6 select-none touch-none"
+                        onTouchStart={handleTouch}
+                        onTouchMove={handleTouch}
+                    >
                         {selectedIndex !== null && (
                             <div 
-                                className={`absolute -top-8 z-30 transition-all duration-200 pointer-events-none ${getTooltipClass()}`}
+                                className={`absolute -top-8 z-30 transition-all duration-75 pointer-events-none ${getTooltipClass()}`}
                                 style={getTooltipStyle()}
                             >
                                 <div className="bg-[#121212] px-2.5 py-1.5 rounded-lg border border-white/10 flex items-center gap-1.5 shadow-xl whitespace-nowrap">
                                     <div className="w-2 h-2 rounded-full bg-art-cyan"></div>
                                     <span className="text-[12px] font-medium text-white">支出 {formatMoney(selectedData.amount)}</span>
-                                    <div 
-                                        className={`absolute bottom-[-4px] w-2 h-2 bg-[#121212] border-b border-r border-white/10 rotate-45 ${
-                                            selectedIndex === 0 ? 'left-3' : 
-                                            selectedIndex === chartData.length - 1 ? 'right-3' : 
-                                            'left-1/2 -translate-x-1/2'
-                                        }`}
-                                    ></div>
+                                    <div className={`absolute bottom-[-4px] w-2 h-2 bg-[#121212] border-b border-r border-white/10 rotate-45 ${selectedIndex === 0 ? 'left-3' : selectedIndex === chartData.length - 1 ? 'right-3' : 'left-1/2 -translate-x-1/2'}`}></div>
                                 </div>
                             </div>
                         )}
 
                         <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                            <div className="relative w-full border-t border-dashed border-white/10">
-                                <span className="absolute -left-0 -top-2.5 text-[10px] text-art-textSub">{yAxisMax}</span>
-                            </div>
-                            <div className="relative w-full border-t border-dashed border-white/10">
-                                <span className="absolute -left-0 -top-2.5 text-[10px] text-art-textSub">{yAxisMid}</span>
-                            </div>
-                            <div className="relative w-full border-t border-white/10">
-                                <span className="absolute -left-0 -top-2.5 text-[10px] text-art-textSub">0</span>
-                            </div>
+                            <div className="relative w-full border-t border-dashed border-white/10"><span className="absolute -left-0 -top-2.5 text-[10px] text-art-textSub">{yAxisMax}</span></div>
+                            <div className="relative w-full border-t border-dashed border-white/10"><span className="absolute -left-0 -top-2.5 text-[10px] text-art-textSub">{yAxisMid}</span></div>
+                            <div className="relative w-full border-t border-white/10"><span className="absolute -left-0 -top-2.5 text-[10px] text-art-textSub">0</span></div>
                         </div>
 
-                        <div className="absolute inset-0 left-0 right-0 top-3 bottom-0 z-10 px-[2px]">
+                        <div className="absolute inset-0 left-0 right-0 top-3 bottom-0 z-10 px-[2px] pointer-events-none">
                              <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="overflow-visible">
                                 <defs>
                                     <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
@@ -428,17 +464,14 @@
 
                         {selectedIndex !== null && (
                             <div 
-                                className="absolute top-3 bottom-0 w-[1.5px] bg-[#2DD4BF] z-0 transition-all duration-200 pointer-events-none"
+                                className="absolute top-3 bottom-0 w-[1.5px] bg-[#2DD4BF] z-0 transition-all duration-75 pointer-events-none"
                                 style={{ left: `${(selectedIndex / (chartData.length - 1)) * 100}%` }}
                             >
-                                <div 
-                                    className="absolute -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-[#1C1C1E] border-[2.5px] border-[#2DD4BF] rounded-full shadow-[0_0_0_2px_rgba(45,212,191,0.2)]" 
-                                    style={{ top: `${100 - (selectedData.amount / yAxisMax) * 80}%` }}
-                                ></div>
+                                <div className="absolute -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-[#1C1C1E] border-[2.5px] border-[#2DD4BF] rounded-full shadow-[0_0_0_2px_rgba(45,212,191,0.2)]" style={{ top: `${100 - (selectedData.amount / yAxisMax) * 80}%` }}></div>
                             </div>
                         )}
 
-                        <div className="absolute top-0 left-0 w-full h-full z-20 flex items-end">
+                        <div className="absolute top-0 left-0 w-full h-full z-20 flex items-end pointer-events-none">
                              {chartData.map((d, i) => {
                                  const showLabel = i === 0 || i === chartData.length - 1 || (i + 1) % 5 === 0;
                                  const isSelected = selectedIndex === i;
@@ -446,23 +479,10 @@
                                  const originClass = i === 0 ? 'origin-bottom-left' : (i === chartData.length - 1 ? 'origin-bottom-right' : 'origin-bottom');
 
                                  return (
-                                    <div 
-                                        key={i} 
-                                        className={`flex-1 h-full flex items-end ${justifyClass} pb-[-20px] cursor-pointer group relative`}
-                                        onClick={() => { setSelectedIndex(i); haptic('light'); }}
-                                    >
+                                    <div key={i} className={`flex-1 h-full flex items-end ${justifyClass} pb-[-20px]`}>
                                         <div className="absolute inset-0 bg-transparent"></div>
-                                        
                                         {(showLabel || isSelected) && (
-                                            <div 
-                                                className={`
-                                                    text-[9px] mb-[-24px] px-0.5 py-0.5 rounded-md transition-all duration-200 whitespace-nowrap
-                                                    ${originClass}
-                                                    ${isSelected ? 'bg-black text-white font-bold z-30 shadow-lg scale-110 px-1.5' : 'text-art-textSub'}
-                                                `}
-                                            >
-                                                {d.dateStr}
-                                            </div>
+                                            <div className={`text-[9px] mb-[-24px] px-0.5 py-0.5 rounded-md transition-all duration-200 whitespace-nowrap ${originClass} ${isSelected ? 'bg-black text-white font-bold z-30 shadow-lg scale-110 px-1.5' : 'text-art-textSub'}`}>{d.dateStr}</div>
                                         )}
                                     </div>
                                    );
@@ -513,111 +533,57 @@
         };
 
         const FilterSidebar = ({ isOpen, onClose, currentFilters, onApply }) => {
+            // ... (FilterSidebar Code Remains Unchanged)
             const [localFilters, setLocalFilters] = useState(currentFilters);
-
-            useEffect(() => {
-                if (isOpen) setLocalFilters(currentFilters);
-            }, [isOpen, currentFilters]);
-
-            const handleApply = () => {
-                onApply(localFilters);
-                onClose();
-            };
+            useEffect(() => { if (isOpen) setLocalFilters(currentFilters); }, [isOpen, currentFilters]);
+            const handleApply = () => { onApply(localFilters); onClose(); };
 
             return (
                 <>
-                    <div 
-                        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[220] transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-                        onClick={onClose}
-                    />
-                    
+                    <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[220] transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={onClose} />
                     <div className={`fixed inset-y-0 right-0 w-[85%] max-w-[320px] bg-[#1C1C1E] z-[230] transform transition-transform duration-300 ease-out shadow-2xl flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                         <div className="flex items-center justify-between p-4 border-b border-white/10 pt-safe">
                             <button onClick={onClose} className="text-art-textSub">取消</button>
                             <h3 className="text-[17px] font-bold text-white">筛选</h3>
                             <button onClick={handleApply} className="text-art-accent font-bold">完成</button>
                         </div>
-
                         <div className="flex-1 overflow-y-auto p-4 space-y-6">
                             <div>
                                 <div className="text-[13px] text-art-textSub mb-2 ml-1">时间范围</div>
                                 <div className="bg-[#2C2C2E] rounded-xl p-3 flex items-center justify-between gap-2">
-                                    <input 
-                                        type="date" 
-                                        className="bg-transparent text-white text-[14px] outline-none w-full text-center"
-                                        value={localFilters.startDate || ''}
-                                        onChange={(e) => setLocalFilters({...localFilters, startDate: e.target.value})}
-                                    />
+                                    <input type="date" className="bg-transparent text-white text-[14px] outline-none w-full text-center" value={localFilters.startDate || ''} onChange={(e) => setLocalFilters({...localFilters, startDate: e.target.value})} />
                                     <span className="text-art-textSub">-</span>
-                                    <input 
-                                        type="date" 
-                                        className="bg-transparent text-white text-[14px] outline-none w-full text-center"
-                                        value={localFilters.endDate || ''}
-                                        onChange={(e) => setLocalFilters({...localFilters, endDate: e.target.value})}
-                                    />
+                                    <input type="date" className="bg-transparent text-white text-[14px] outline-none w-full text-center" value={localFilters.endDate || ''} onChange={(e) => setLocalFilters({...localFilters, endDate: e.target.value})} />
                                 </div>
                             </div>
-
                             <div>
                                 <div className="text-[13px] text-art-textSub mb-2 ml-1">分类</div>
                                 <div className="flex flex-wrap gap-2">
-                                    <button 
-                                        onClick={() => setLocalFilters({...localFilters, category: 'all'})}
-                                        className={`px-3 py-1.5 rounded-lg text-[13px] border ${localFilters.category === 'all' ? 'bg-white text-black border-white' : 'bg-[#2C2C2E] text-white border-transparent'}`}
-                                    >
-                                        全部
-                                    </button>
+                                    <button onClick={() => setLocalFilters({...localFilters, category: 'all'})} className={`px-3 py-1.5 rounded-lg text-[13px] border ${localFilters.category === 'all' ? 'bg-white text-black border-white' : 'bg-[#2C2C2E] text-white border-transparent'}`}>全部</button>
                                     {categoriesList.map(cat => (
-                                        <button 
-                                            key={cat}
-                                            onClick={() => setLocalFilters({...localFilters, category: cat})}
-                                            className={`px-3 py-1.5 rounded-lg text-[13px] border ${localFilters.category === cat ? 'bg-art-accent text-black border-art-accent' : 'bg-[#2C2C2E] text-white border-transparent'}`}
-                                        >
-                                            {cat}
-                                        </button>
+                                        <button key={cat} onClick={() => setLocalFilters({...localFilters, category: cat})} className={`px-3 py-1.5 rounded-lg text-[13px] border ${localFilters.category === cat ? 'bg-art-accent text-black border-art-accent' : 'bg-[#2C2C2E] text-white border-transparent'}`}>{cat}</button>
                                     ))}
                                 </div>
                             </div>
-
                             <div>
                                 <div className="text-[13px] text-art-textSub mb-2 ml-1">金额区间</div>
                                 <div className="flex items-center gap-3">
                                     <div className="bg-[#2C2C2E] rounded-xl flex-1 px-3 py-2.5">
-                                        <input 
-                                            type="number" 
-                                            placeholder="最低" 
-                                            className="bg-transparent w-full text-white text-[14px] outline-none placeholder-white/20"
-                                            value={localFilters.minAmount || ''}
-                                            onChange={(e) => setLocalFilters({...localFilters, minAmount: e.target.value})}
-                                        />
+                                        <input type="number" placeholder="最低" className="bg-transparent w-full text-white text-[14px] outline-none placeholder-white/20" value={localFilters.minAmount || ''} onChange={(e) => setLocalFilters({...localFilters, minAmount: e.target.value})} />
                                     </div>
                                     <div className="w-2 h-[1px] bg-art-textSub"></div>
                                     <div className="bg-[#2C2C2E] rounded-xl flex-1 px-3 py-2.5">
-                                        <input 
-                                            type="number" 
-                                            placeholder="最高" 
-                                            className="bg-transparent w-full text-white text-[14px] outline-none placeholder-white/20"
-                                            value={localFilters.maxAmount || ''}
-                                            onChange={(e) => setLocalFilters({...localFilters, maxAmount: e.target.value})}
-                                        />
+                                        <input type="number" placeholder="最高" className="bg-transparent w-full text-white text-[14px] outline-none placeholder-white/20" value={localFilters.maxAmount || ''} onChange={(e) => setLocalFilters({...localFilters, maxAmount: e.target.value})} />
                                     </div>
                                 </div>
                             </div>
-
                             <div>
                                 <div className="text-[13px] text-art-textSub mb-2 ml-1">备注关键词</div>
                                 <div className="bg-[#2C2C2E] rounded-xl px-3 py-2.5 flex items-center">
                                     <Search size={16} className="text-art-textSub mr-2" />
-                                    <input 
-                                        type="text" 
-                                        placeholder="搜索备注..." 
-                                        className="bg-transparent w-full text-white text-[14px] outline-none placeholder-white/20"
-                                        value={localFilters.keyword || ''}
-                                        onChange={(e) => setLocalFilters({...localFilters, keyword: e.target.value})}
-                                    />
+                                    <input type="text" placeholder="搜索备注..." className="bg-transparent w-full text-white text-[14px] outline-none placeholder-white/20" value={localFilters.keyword || ''} onChange={(e) => setLocalFilters({...localFilters, keyword: e.target.value})} />
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </>
@@ -625,6 +591,7 @@
         };
 
         const FilterSheet = ({ isOpen, onClose, dateRange, onModify }) => {
+            // ... (FilterSheet Code Remains Unchanged)
             if (!isOpen) return null;
             return (
                 <div className="fixed inset-0 z-[200] flex items-end justify-center">
@@ -634,13 +601,11 @@
                             <h3 className="text-[17px] font-bold text-white">筛选条件</h3>
                             <button onClick={onClose} className="absolute right-0 p-1 text-art-textSub active:opacity-60 bg-art-cardLight rounded-full"><X size={18} /></button>
                         </div>
-                        
                         <div className="flex items-center gap-3 mb-10 pl-1">
                             <div className="text-white"><Clock size={20} /></div>
                             <span className="text-[15px] font-medium text-white/90">当前范围</span>
                             <span className="text-[15px] text-white/90 font-mono ml-auto tracking-wide">{dateRange}</span>
                         </div>
-                        
                         <div className="flex gap-3">
                             <button onClick={() => { onClose(); onModify('viewAll'); }} className="flex-1 py-3.5 bg-white text-black rounded-full font-bold text-[15px] active:scale-95 transition-transform shadow-lg">查看全部流水</button>
                             <button onClick={() => { onClose(); onModify('openSidebar'); }} className="flex-1 py-3.5 bg-[#FF9F0A] text-white rounded-full font-bold text-[15px] active:scale-95 transition-transform shadow-lg">修改筛选条件</button>
@@ -652,7 +617,6 @@
 
         const TransactionGroup = ({ label, total, transactions, groupByDay, onViewEditor }) => {
             const [isExpanded, setIsExpanded] = useState(true);
-
             const daysMap = useMemo(() => {
                 if (!groupByDay) return null;
                 const groups = {};
@@ -666,52 +630,31 @@
             }, [transactions, groupByDay]);
 
             return (
-                <div className="mb-6">
-                    <div 
-                        className="flex justify-between items-center py-4 px-4 bg-[#1C1C1E] rounded-[24px] transition-colors cursor-pointer mb-2"
-                        onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}
-                    >
-                        <div className="flex flex-col">
-                            <span className="text-[18px] font-bold text-white">{label}</span>
-                        </div>
+                <div className="mb-6 animate-slide-up-stagger" style={{ animationDelay: '0.1s' }}>
+                    <div className="flex justify-between items-center py-4 px-4 bg-[#1C1C1E] rounded-[24px] transition-colors cursor-pointer mb-2" onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}>
+                        <div className="flex flex-col"><span className="text-[18px] font-bold text-white">{label}</span></div>
                         <div className="flex items-center gap-3">
                             <div className="text-right">
                                 <div className="text-[11px] text-art-textSub opacity-60 mb-0.5">总支出</div>
                                 <div className="text-[14px] text-white font-medium">{formatMoney(total)}</div>
                             </div>
-                            <div className={`transition-transform duration-200 text-art-textSub ${isExpanded ? 'rotate-180' : ''}`}>
-                                <ChevronDown size={18} />
-                            </div>
+                            <div className={`transition-transform duration-200 text-art-textSub ${isExpanded ? 'rotate-180' : ''}`}><ChevronDown size={18} /></div>
                         </div>
                     </div>
-
                     {isExpanded && (
-                        <div className="animate-fade-in px-1">
+                        <div className="px-1">
                             {groupByDay && daysMap && daysMap.map(([dateStr, items]) => {
                                 const dObj = new Date(dateStr);
                                 const weekDay = ['周日','周一','周二','周三','周四','周五','周六'][dObj.getDay()];
                                 return (
-                                    <div key={dateStr} className="mb-6">
-                                        <div className="flex justify-between items-end px-2 mb-2 text-art-textSub">
-                                            <div className="text-[13px] font-medium">
-                                                {format(dObj, 'MM月dd日')} {weekDay}
-                                            </div>
-                                        </div>
-                                        <div className="space-y-0">
-                                            {items.map(t => (
-                                                <TransactionItem key={t.id} t={t} onClick={() => onViewEditor(t)} />
-                                            ))}
-                                        </div>
+                                    <div key={dateStr} className="mb-6 animate-fade-in">
+                                        <div className="flex justify-between items-end px-2 mb-2 text-art-textSub"><div className="text-[13px] font-medium">{format(dObj, 'MM月dd日')} {weekDay}</div></div>
+                                        <div className="space-y-0">{items.map(t => (<TransactionItem key={t.id} t={t} onClick={() => onViewEditor(t)} />))}</div>
                                     </div>
                                 );
                             })}
-
                             {!groupByDay && (
-                                <div className="space-y-0 mt-2">
-                                    {transactions.map(t => (
-                                        <TransactionItem key={t.id} t={t} onClick={() => onViewEditor(t)} />
-                                    ))}
-                                </div>
+                                <div className="space-y-0 mt-2 animate-fade-in">{transactions.map(t => (<TransactionItem key={t.id} t={t} onClick={() => onViewEditor(t)} />))}</div>
                             )}
                         </div>
                     )}
@@ -720,35 +663,32 @@
         };
 
         const TransactionItem = ({ t, onClick }) => (
-            <div 
-                onClick={onClick} 
-                className="flex items-center justify-between py-4 px-2 active:bg-white/5 rounded-xl transition-colors cursor-pointer"
-            >
+            // ... (TransactionItem Code Remains Unchanged)
+            <div onClick={onClick} className="flex items-center justify-between py-4 px-2 active:bg-white/5 rounded-xl transition-colors cursor-pointer">
                 <div className="flex items-center gap-4 overflow-hidden">
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${getCategoryColor(t.category).bg} ${getCategoryColor(t.category).text}`}>
                         {React.cloneElement(getCategoryIcon(t.category), { size: 18 })}
                     </div>
                     <div className="flex flex-col min-w-0">
-                        <div className="text-[15px] text-white font-bold truncate mb-1">
-                            {t.merchant || t.category}
-                        </div>
-                        <div className="text-[12px] text-[#666] font-normal truncate flex items-center gap-1.5">
-                            <span>{getRawTimeStr(t.date)}</span>
-                            <span>·</span>
-                            <span>{t.note || t.category}</span>
-                        </div>
+                        <div className="text-[15px] text-white font-bold truncate mb-1">{t.merchant || t.category}</div>
+                        <div className="text-[12px] text-[#666] font-normal truncate flex items-center gap-1.5"><span>{getRawTimeStr(t.date)}</span><span>·</span><span>{t.note || t.category}</span></div>
                     </div>
                 </div>
-                <div className="text-[17px] text-art-blue font-bold shrink-0 ml-3 font-mono tracking-tight">
-                    {formatMoney(t.amount)}
-                </div>
+                <div className="text-[17px] text-art-blue font-bold shrink-0 ml-3 font-mono tracking-tight">{formatMoney(t.amount)}</div>
             </div>
         );
 
-        const PeriodPage = ({ title, type, total, allTransactions, onClose, initialCategory }) => {
+        const PeriodPage = ({ title, type, total, allTransactions, onClose, initialCategory, onViewEditor }) => {
+            // ... (PeriodPage Code Remains Unchanged - already updated in previous turn)
             const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
             const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+            const [isLoading, setIsLoading] = useState(true);
             
+            useEffect(() => {
+                const timer = setTimeout(() => setIsLoading(false), 500); 
+                return () => clearTimeout(timer);
+            }, []);
+
             const getInitialFilters = () => {
                 const now = new Date();
                 let startDate = '', endDate = '';
@@ -767,28 +707,14 @@
                     endDate = format(endOfMonth(now), 'yyyy-MM-dd');
                 }
 
-                return {
-                    startDate,
-                    endDate,
-                    category: cat,
-                    minAmount: '',
-                    maxAmount: '',
-                    keyword: ''
-                };
+                return { startDate, endDate, category: cat, minAmount: '', maxAmount: '', keyword: '' };
             };
 
             const [activeFilters, setActiveFilters] = useState(getInitialFilters());
 
             const handleSheetAction = (action) => {
                 if (action === 'viewAll') {
-                    setActiveFilters({
-                        startDate: '',
-                        endDate: '',
-                        category: 'all',
-                        minAmount: '',
-                        maxAmount: '',
-                        keyword: ''
-                    });
+                    setActiveFilters({ startDate: '', endDate: '', category: 'all', minAmount: '', maxAmount: '', keyword: '' });
                     haptic();
                 } else if (action === 'openSidebar') {
                     setIsSidebarOpen(true);
@@ -800,9 +726,7 @@
                 return allTransactions.filter(t => {
                     const rawDate = getRawDateStr(t.date);
                     if (!rawDate) return false; 
-
                     const amount = Math.abs(Number(t.amount || 0));
-                    
                     if (activeFilters.startDate && rawDate < activeFilters.startDate) return false;
                     if (activeFilters.endDate && rawDate > activeFilters.endDate) return false;
                     if (activeFilters.category !== 'all' && t.category !== activeFilters.category) return false;
@@ -814,19 +738,16 @@
                         const kw = activeFilters.keyword.toLowerCase();
                         if (!note.includes(kw) && !merchant.includes(kw)) return false;
                     }
-
                     return true;
                 }).sort((a,b) => b.date.localeCompare(a.date));
             }, [activeFilters, allTransactions]);
 
             const groupedData = useMemo(() => {
                 const groups = {}; 
-                
                 list.forEach(t => {
                     const dateStr = getRawDateStr(t.date);
                     if (!dateStr) return;
                     const dObj = new Date(dateStr);
-                    
                     let key = "";
                     let label = "";
                     
@@ -855,13 +776,10 @@
                     groups[key].total += Math.abs(Number(t.amount || 0));
                     groups[key].items.push(t);
                 });
-
                 return Object.entries(groups).sort((a,b) => b[0].localeCompare(a[0])).map(([k,v]) => v);
             }, [list, type]);
 
-            const currentTotal = useMemo(() => {
-                return list.reduce((sum, t) => sum + Math.abs(Number(t.amount || 0)), 0);
-            }, [list]);
+            const currentTotal = useMemo(() => list.reduce((sum, t) => sum + Math.abs(Number(t.amount || 0)), 0), [list]);
 
             const displayTitle = useMemo(() => {
                 if (!activeFilters.startDate && !activeFilters.endDate) return "全部流水";
@@ -874,72 +792,45 @@
 
             return (
                 <div className="page-container page-enter pb-safe flex flex-col z-[100] bg-[#000000] no-scrollbar">
-                    <div className="relative h-[140px] w-full overflow-hidden shrink-0">
+                    <div className="relative h-[200px] w-full overflow-hidden shrink-0 transition-all duration-700 ease-out transform" style={{ opacity: isLoading ? 0.9 : 1, transform: isLoading ? 'scale(1.02)' : 'scale(1)' }}>
                         <img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#000000]"></div>
-                        
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-[#000000]"></div>
                         <div className="absolute top-0 left-0 right-0 pt-safe px-4 h-[60px] flex items-center justify-between z-20">
                             <button onClick={onClose} className="p-2 -ml-2 text-white flex items-center gap-1 active:opacity-60 transition-opacity">
                                 <ArrowLeft size={24} /> 
-                                <span className="text-[17px] font-medium tracking-wide truncate max-w-[200px]">{finalTitle}</span>
+                                <span className="text-[17px] font-medium tracking-wide truncate max-w-[200px] text-white/90">{finalTitle}</span>
                             </button>
                             <button onClick={() => {}} className="p-2 text-white/90 active:opacity-60"><Plus size={26} /></button>
                         </div>
-
-                        <div className="absolute bottom-4 left-6 z-20">
-                            <div className="text-[40px] font-bold text-white font-mono tracking-tighter leading-none -ml-1 mb-1">-{formatMoney(currentTotal)}</div>
-                            <div className="flex items-center gap-3 text-[12px] text-white/70 font-medium">
-                                <span className="opacity-70">支出 {formatMoney(currentTotal)}</span>
-                            </div>
+                        <div className="absolute bottom-10 left-6 z-20 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                            <div className="text-[12px] text-white/70 font-medium mb-1 tracking-widest uppercase">总支出</div>
+                            <div className="text-[48px] font-bold text-white font-mono tracking-tighter leading-none -ml-1">-{formatMoney(currentTotal)}</div>
                         </div>
                     </div>
 
-                    <div className="flex-1 px-4 -mt-2 relative z-30">
-                        <div className="bg-[#121212] rounded-t-[24px] min-h-full border-t border-[#2C2C2E] p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+                    <div className="flex-1 px-4 -mt-6 relative z-30">
+                        <div className="bg-[#121212] rounded-t-[32px] min-h-full border-t border-[#2C2C2E] p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl">
                             <div className="flex justify-between items-center mb-6 px-1 pt-1">
-                                <span className="text-[13px] text-art-textSub font-medium">
-                                    {list.length === allTransactions.length ? "展示所有流水" : "已筛选"}
-                                </span>
-                                <button onClick={() => { setIsFilterSheetOpen(true); haptic(); }} className="text-[13px] text-art-accent flex items-center gap-1 active:opacity-60">
-                                    {list.length === allTransactions.length ? "筛选" : "查看全部"} <ChevronRight size={14}/>
+                                <span className="text-[13px] text-art-textSub font-medium tracking-wide">{list.length === allTransactions.length ? "全部明细" : "筛选结果"}</span>
+                                <button onClick={() => { setIsFilterSheetOpen(true); haptic(); }} className="text-[13px] text-art-accent flex items-center gap-1 active:opacity-60 font-medium bg-art-accent/10 px-3 py-1.5 rounded-full">
+                                    {list.length === allTransactions.length ? "筛选" : "查看全部"} <ChevronRight size={12}/>
                                 </button>
                             </div>
-
-                            <div className="space-y-6 pb-10">
-                                {groupedData.length === 0 ? (
-                                    <div className="text-center py-20 text-art-textSub opacity-50 flex flex-col items-center">
-                                        <div className="text-4xl mb-3">🍃</div>
-                                        <div className="text-[15px]">暂无记录</div>
-                                    </div>
-                                ) : (
-                                    groupedData.map((group, idx) => (
-                                        <TransactionGroup 
-                                            key={idx}
-                                            label={group.label}
-                                            total={group.total}
-                                            transactions={group.items}
-                                            groupByDay={type !== 'today'}
-                                            onViewEditor={(t) => { /* placeholder */ }}
-                                        />
-                                    ))
-                                )}
-                            </div>
+                            {isLoading ? <Skeleton /> : (
+                                <div className="space-y-6 pb-10">
+                                    {groupedData.length === 0 ? (
+                                        <div className="text-center py-20 text-art-textSub opacity-50 flex flex-col items-center animate-fade-in"><div className="text-4xl mb-3">🍃</div><div className="text-[15px]">暂无记录</div></div>
+                                    ) : (
+                                        groupedData.map((group, idx) => (
+                                            <TransactionGroup key={idx} label={group.label} total={group.total} transactions={group.items} groupByDay={type !== 'today'} onViewEditor={onViewEditor} />
+                                        ))
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
-
-                    <FilterSheet 
-                        isOpen={isFilterSheetOpen} 
-                        onClose={() => setIsFilterSheetOpen(false)} 
-                        dateRange={activeFilters.startDate ? `${activeFilters.startDate} 至 ${activeFilters.endDate || '今'}` : '全部时间'} 
-                        onModify={handleSheetAction}
-                    />
-
-                    <FilterSidebar 
-                        isOpen={isSidebarOpen}
-                        onClose={() => setIsSidebarOpen(false)}
-                        currentFilters={activeFilters}
-                        onApply={setActiveFilters}
-                    />
+                    <FilterSheet isOpen={isFilterSheetOpen} onClose={() => setIsFilterSheetOpen(false)} dateRange={activeFilters.startDate ? `${activeFilters.startDate} 至 ${activeFilters.endDate || '今'}` : '全部时间'} onModify={handleSheetAction} />
+                    <FilterSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} currentFilters={activeFilters} onApply={setActiveFilters} />
                 </div>
             );
         };
@@ -948,23 +839,11 @@
             const [isExpanded, setIsExpanded] = useState(true);
             return (
                 <div className="mb-6">
-                    <div 
-                        className="flex justify-between items-center py-4 px-4 bg-[#1C1C1E] rounded-[24px] transition-colors cursor-pointer mb-2 sticky z-10"
-                        style={{ top: '0px' }}
-                        onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}
-                    >
-                        <div className="flex items-baseline gap-1.5">
-                            <span className="text-[20px] font-bold text-white">{month}月</span>
-                            <span className="text-[13px] text-art-textSub">{year}</span>
-                        </div>
+                    <div className="flex justify-between items-center py-4 px-4 bg-[#1C1C1E] rounded-[24px] transition-colors cursor-pointer mb-2 sticky z-10" style={{ top: '0px' }} onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}>
+                        <div className="flex items-baseline gap-1.5"><span className="text-[20px] font-bold text-white">{month}月</span><span className="text-[13px] text-art-textSub">{year}</span></div>
                         <div className="flex items-center gap-3">
-                            <div className="text-right">
-                                <div className="text-[11px] text-art-textSub opacity-60 mb-0.5">总支出</div>
-                                <div className="text-[14px] text-white font-medium">{formatMoney(totalExpense)}</div>
-                            </div>
-                            <div className={`transition-transform duration-200 text-art-textSub ${isExpanded ? 'rotate-180' : ''}`}>
-                                <ChevronDown size={18} />
-                            </div>
+                            <div className="text-right"><div className="text-[11px] text-art-textSub opacity-60 mb-0.5">总支出</div><div className="text-[14px] text-white font-medium">{formatMoney(totalExpense)}</div></div>
+                            <div className={`transition-transform duration-200 text-art-textSub ${isExpanded ? 'rotate-180' : ''}`}><ChevronDown size={18} /></div>
                         </div>
                     </div>
                     {isExpanded && (
@@ -974,16 +853,8 @@
                                 const weekDay = ['周日','周一','周二','周三','周四','周五','周六'][dObj.getDay()];
                                 return (
                                     <div key={dateStr} className="mb-6">
-                                        <div className="flex justify-between items-end px-2 mb-2 text-art-textSub">
-                                            <div className="text-[13px] font-medium">
-                                                {format(dObj, 'MM月dd日')} {weekDay}
-                                            </div>
-                                        </div>
-                                        <div className="space-y-0"> 
-                                            {items.map((t) => (
-                                                <TransactionItem key={t.id} t={t} onClick={() => onViewEditor(t)} />
-                                            ))}
-                                        </div>
+                                        <div className="flex justify-between items-end px-2 mb-2 text-art-textSub"><div className="text-[13px] font-medium">{format(dObj, 'MM月dd日')} {weekDay}</div></div>
+                                        <div className="space-y-0">{items.map((t) => (<TransactionItem key={t.id} t={t} onClick={() => onViewEditor(t)} />))}</div>
                                     </div>
                                 );
                             })}
@@ -993,13 +864,22 @@
             );
         };
 
+        // 🔥🔥🔥 REDESIGNED EDITOR PAGE 🔥🔥🔥
+        // 1. 固定页面：根 div 改为 fixed inset-0 flex flex-col z-[100] bg-[#000000] overflow-hidden
+        // 2. 内部滚动：内容区域 flex-1 overflow-y-auto no-scrollbar overscroll-none
+        // 3. 修复保存：通过 handleSave 包装传递给 onSave，确保参数传递正确（App 中已修改接收逻辑）
         const EditorPage = ({ transaction, onClose, onSave, onDelete }) => {
-            const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // 🆕 Local confirm state
+            const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+            const [isLoading, setIsLoading] = useState(true);
+
+            // Simulate entry loading
+            useEffect(() => {
+                const timer = setTimeout(() => setIsLoading(false), 300);
+                return () => clearTimeout(timer);
+            }, []);
 
             const getInitialTime = () => {
-                if (transaction) {
-                    return getRawTimeStr(transaction.date); 
-                }
+                if (transaction) return getRawTimeStr(transaction.date); 
                 const now = new Date();
                 const h = String(now.getHours()).padStart(2, '0');
                 const m = String(now.getMinutes()).padStart(2, '0');
@@ -1020,77 +900,134 @@
                 if (!form.amount) return;
                 setLoading(true);
                 const isoDateTime = `${form.date}T${form.time}:00.000Z`;
+                // 调用父组件传递的 onSave，传递表单数据和 ID
                 await onSave({ ...form, date: isoDateTime }, transaction?.id);
                 setLoading(false);
             };
 
-            // 🆕 Handle the confirm action
             const handleConfirmDelete = () => {
                 onDelete(transaction.id);
             };
 
-            return (
-                <div className="page-container page-enter pb-safe flex flex-col z-[100] bg-art-bg ios-scroll no-scrollbar">
-                    {/* 🆕 Render ConfirmDialog locally within EditorPage */}
-                    <ConfirmDialog 
-                        isOpen={showDeleteConfirm} 
-                        onCancel={() => setShowDeleteConfirm(false)} 
-                        onConfirm={handleConfirmDelete} 
-                        title="确定删除这条记录？"
-                        message="此操作无法撤销，数据将被永久移除。"
-                    />
+            const currentCategoryColor = getCategoryColor(form.category);
 
-                    <div className="glass-nav pt-safe flex justify-between items-center px-4 h-[44px]">
-                        <button onClick={onClose} className="text-art-textSub text-[15px]">取消</button>
-                        <h3 className="font-bold text-[17px] text-white">{transaction ? '编辑' : '记一笔'}</h3>
-                        <button onClick={handleSave} className="text-art-accent font-bold text-[15px]">保存</button>
+            // 固定页面的关键：fixed inset-0 overflow-hidden
+            return (
+                <div className="fixed inset-0 z-[100] bg-[#000000] overflow-hidden flex flex-col">
+                    <ConfirmDialog isOpen={showDeleteConfirm} onCancel={() => setShowDeleteConfirm(false)} onConfirm={handleConfirmDelete} title="确定删除这条记录？" message="此操作无法撤销，数据将被永久移除。" />
+
+                    {/* ✨ Immersive Header Area - Fixed height, no scroll */}
+                    <div className="relative w-full overflow-hidden shrink-0 transition-all duration-500 ease-out" style={{ height: '300px', opacity: isLoading ? 0.5 : 1 }}>
+                        {/* Background Gradient based on Category */}
+                        <div className={`absolute inset-0 bg-gradient-to-b ${currentCategoryColor.gradient} via-black/80 to-[#000000] opacity-30`}></div>
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 mix-blend-overlay"></div>
+
+                        {/* Top Nav */}
+                        <div className="absolute top-0 left-0 right-0 pt-safe px-4 h-[60px] flex items-center justify-between z-20">
+                            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 backdrop-blur-md active:bg-white/10 transition-colors text-white">
+                                <ArrowLeft size={20} />
+                            </button>
+                            <span className="text-[15px] font-medium text-white/50 tracking-widest uppercase">DETAIL</span>
+                            <button onClick={handleSave} className="px-4 h-9 rounded-full bg-white text-black font-bold text-[13px] active:scale-95 transition-transform flex items-center gap-2">
+                                {loading && <Loader2 size={12} className="animate-spin" />}
+                                {transaction ? '保存' : '完成'}
+                            </button>
+                        </div>
+
+                        {/* Central Focus Area */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pt-10 z-10 animate-bounce-in">
+                            {/* Category Icon with Glow */}
+                            <div className={`w-16 h-16 rounded-[24px] flex items-center justify-center mb-6 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] ${currentCategoryColor.bg} ${currentCategoryColor.text} border border-white/10 backdrop-blur-xl`}>
+                                {React.cloneElement(getCategoryIcon(form.category), { size: 32, strokeWidth: 1.5 })}
+                            </div>
+                            
+                            {/* Huge Amount Input */}
+                            <div className="flex items-baseline justify-center w-full px-8 relative">
+                                <span className="text-[32px] font-light text-white/40 absolute left-8 top-2">¥</span>
+                                <input 
+                                    type="number" 
+                                    value={form.amount} 
+                                    onChange={(e) => setForm({...form, amount: e.target.value})} 
+                                    placeholder="0.00" 
+                                    className="w-full bg-transparent text-[56px] font-bold text-white placeholder-white/10 font-mono text-center outline-none caret-art-accent tracking-tighter"
+                                    autoFocus={!transaction} 
+                                />
+                            </div>
+                            <div className="text-[13px] text-white/40 mt-2 font-medium tracking-wide">{form.category}</div>
+                        </div>
                     </div>
                     
-                    <div className="p-4 flex-1 overflow-y-auto ios-scroll no-scrollbar">
-                         <div className="bg-art-card rounded-[20px] px-5 py-4 flex items-center mt-2 border border-art-border focus-within:ring-2 focus-within:ring-art-accent/20 transition-all shadow-sm mb-6">
-                            <span className="text-[24px] text-art-textSub mr-2 font-light">¥</span>
-                            <input type="number" value={form.amount} onChange={(e) => setForm({...form, amount: e.target.value})} placeholder="0.00" className="w-full bg-transparent text-[32px] font-bold text-white placeholder-gray-600 h-[40px] font-mono" autoFocus={!transaction} />
-                        </div>
+                    {/* ✨ Content Card Area - Scrollable */}
+                    <div className="flex-1 px-4 -mt-8 relative z-30 animate-slide-up-stagger overflow-y-auto no-scrollbar overscroll-none" style={{ animationDelay: '0.1s' }}>
+                        <div className="bg-[#121212] rounded-t-[32px] min-h-full border-t border-[#2C2C2E] p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl pb-32">
+                            
+                            {/* Section: Category Selector */}
+                            <div className="mb-8">
+                                <h4 className="text-[11px] text-white/30 font-bold mb-4 ml-1 uppercase tracking-widest flex items-center gap-2"><Tag size={10} /> Change Category</h4>
+                                <div className="grid grid-cols-4 gap-3">
+                                    {categoriesList.map(cat => {
+                                        const color = getCategoryColor(cat);
+                                        const isSelected = form.category === cat;
+                                        return (
+                                            <button key={cat} onClick={() => {setForm({...form, category: cat}); haptic('light');}} className={`flex flex-col items-center justify-center py-3 rounded-[20px] transition-all active:scale-90 duration-300 border ${isSelected ? `bg-white text-black shadow-lg scale-105 border-white` : 'bg-[#1C1C1E] border-white/5 hover:bg-white/5'}`}>
+                                                <div className={`w-7 h-7 rounded-full flex items-center justify-center mb-1.5 transition-colors ${isSelected ? 'text-black bg-black/10' : 'text-white/50'}`}>
+                                                    {React.cloneElement(getCategoryIcon(cat), { size: 14 })}
+                                                </div>
+                                                <span className={`text-[10px] font-bold ${isSelected ? 'text-black' : 'text-white/40'}`}>{cat}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
 
-                        <h4 className="text-[13px] text-art-textSub font-medium mb-3 ml-1 uppercase">分类</h4>
-                        <div className="grid grid-cols-4 gap-3 mb-6">
-                            {categoriesList.map(cat => {
-                                const color = getCategoryColor(cat);
-                                const isSelected = form.category === cat;
-                                return (
-                                    <button key={cat} onClick={() => {setForm({...form, category: cat}); haptic('light');}} className={`flex flex-col items-center justify-center py-3 rounded-[18px] transition-all active:scale-95 duration-200 border ${isSelected ? `bg-white text-black shadow-lg` : 'bg-art-card border-art-border hover:opacity-80'}`}>
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1.5 ${isSelected ? 'text-art-accent bg-black' : color.text}`}>
-                                            {getCategoryIcon(cat)}
+                            {/* Section: Details Form */}
+                            <div className="mb-8">
+                                <h4 className="text-[11px] text-white/30 font-bold mb-4 ml-1 uppercase tracking-widest flex items-center gap-2"><PenLine size={10} /> Details</h4>
+                                <div className="bg-[#1C1C1E] rounded-[24px] border border-white/5 overflow-hidden">
+                                    {/* Merchant Row */}
+                                    <div className="flex items-center px-5 py-4 border-b border-white/5 group transition-colors hover:bg-white/5">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50"><ShoppingBag size={16} /></div>
+                                        <div className="flex-1">
+                                            <div className="text-[11px] text-white/40 mb-0.5">商户</div>
+                                            <input type="text" value={form.merchant} onChange={(e) => setForm({...form, merchant: e.target.value})} placeholder="输入商户名称" className="w-full bg-transparent text-[15px] text-white focus:outline-none placeholder-white/20 font-medium" />
                                         </div>
-                                        <span className={`text-[11px] font-bold ${isSelected ? 'text-black' : 'text-art-textSub'}`}>{cat}</span>
+                                    </div>
+                                    
+                                    {/* Date & Time Row */}
+                                    <div className="flex items-center px-5 py-4 border-b border-white/5 group transition-colors hover:bg-white/5">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50"><Clock size={16} /></div>
+                                        <div className="flex-1 flex gap-4">
+                                            <div className="flex-1">
+                                                <div className="text-[11px] text-white/40 mb-0.5">日期</div>
+                                                <input type="date" value={form.date} onChange={(e) => setForm({...form, date: e.target.value})} className="w-full bg-transparent text-[15px] text-white focus:outline-none font-medium appearance-none" />
+                                            </div>
+                                            <div className="w-[1px] bg-white/10 my-1"></div>
+                                            <div className="flex-1">
+                                                <div className="text-[11px] text-white/40 mb-0.5">时间</div>
+                                                <input type="time" value={form.time} onChange={(e) => setForm({...form, time: e.target.value})} className="w-full bg-transparent text-[15px] text-white focus:outline-none font-medium appearance-none" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Note Row */}
+                                    <div className="flex items-start px-5 py-4 group transition-colors hover:bg-white/5">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50 mt-0.5"><MessageCircle size={16} /></div>
+                                        <div className="flex-1">
+                                            <div className="text-[11px] text-white/40 mb-0.5">备注</div>
+                                            <textarea rows="2" value={form.note} onChange={(e) => setForm({...form, note: e.target.value})} placeholder="添加备注..." className="w-full bg-transparent text-[15px] text-white focus:outline-none placeholder-white/20 font-medium resize-none" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {transaction && (
+                                <div className="flex justify-center">
+                                    <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center gap-2 text-[#FF453A] font-medium text-[13px] opacity-60 hover:opacity-100 transition-opacity py-4 px-6 active:scale-95">
+                                        <Trash2 size={16} /> 删除此记录
                                     </button>
-                                );
-                            })}
+                                </div>
+                            )}
                         </div>
-
-                        <h4 className="text-[13px] text-art-textSub font-medium mb-3 ml-1 uppercase">详情</h4>
-                        <div className="bg-art-card rounded-2xl border border-art-border overflow-hidden mb-6">
-                            <div className="flex items-center px-4 py-3 border-b border-art-border">
-                                <span className="w-16 text-[15px] text-art-textSub">商户</span>
-                                <input type="text" value={form.merchant} onChange={(e) => setForm({...form, merchant: e.target.value})} placeholder="选填" className="flex-1 bg-transparent text-[15px] text-white focus:outline-none" />
-                            </div>
-                            <div className="flex items-center px-4 py-3 border-b border-art-border">
-                                <span className="w-16 text-[15px] text-art-textSub">日期</span>
-                                <input type="date" value={form.date} onChange={(e) => setForm({...form, date: e.target.value})} className="bg-transparent text-[15px] text-white focus:outline-none mr-2" />
-                                <input type="time" value={form.time} onChange={(e) => setForm({...form, time: e.target.value})} className="flex-1 bg-transparent text-[15px] text-white focus:outline-none text-right" />
-                            </div>
-                            <div className="flex items-center px-4 py-3">
-                                <span className="w-16 text-[15px] text-art-textSub">备注</span>
-                                <input type="text" value={form.note} onChange={(e) => setForm({...form, note: e.target.value})} placeholder="选填" className="flex-1 bg-transparent text-[15px] text-white focus:outline-none" />
-                            </div>
-                        </div>
-
-                        {transaction && (
-                            // 🆕 Update onClick to show local confirm dialog
-                            <button onClick={() => setShowDeleteConfirm(true)} className="w-full py-3.5 rounded-xl text-red-500 bg-art-cardLight font-medium text-[15px] mb-8 active:scale-95 transition-transform">
-                                删除记录
-                            </button>
-                        )}
                     </div>
                 </div>
             );
@@ -1168,17 +1105,42 @@
                 } else setPullY(0);
             };
 
-            const handleSave = async (isEdit = false) => {
+            // 专门处理详情页的保存（支持传参）
+            const handleEditorSave = async (data, id) => {
+                setLoading(true);
+                const payload = { 
+                    amount: parseFloat(data.amount), 
+                    merchant: data.merchant || (data.category), 
+                    category: data.category, 
+                    date: data.date, // 已经是 ISO 字符串了
+                    note: data.note 
+                };
+                
+                if (id) {
+                    await supabase.from('transactions').update(payload).eq('id', id);
+                    showToast("已更新");
+                } else {
+                    await supabase.from('transactions').insert([payload]);
+                    showToast("记账成功");
+                }
+                
+                setView({ name: 'main' }); // 保存后关闭页面
+                setLoading(false);
+                fetchTransactions(); // 刷新列表
+            };
+
+            // 快捷记账的保存（使用 form 状态）
+            const handleQuickSave = async () => {
                 if (!form.amount) return;
                 setLoading(true);
                 const isoDateTime = `${form.date}T${form.time}:00.000Z`;
 
                 const payload = { amount: parseFloat(form.amount), merchant: form.merchant || (form.category), category: form.category, date: isoDateTime, note: form.note };
-                if (isEdit) await supabase.from('transactions').update(payload).eq('id', currentTransaction.id);
-                else await supabase.from('transactions').insert([payload]);
-                showToast(isEdit ? "已更新" : "记账成功");
+                
+                await supabase.from('transactions').insert([payload]);
+                showToast("记账成功");
                 setIsAddModalOpen(false); 
-                if (!isEdit) setForm({ ...form, amount: '', merchant: '', note: '', time: getNowTime() });
+                setForm({ ...form, amount: '', merchant: '', note: '', time: getNowTime() });
                 setLoading(false);
             };
 
@@ -1186,7 +1148,7 @@
                 setConfirmDialog({ isOpen: true, id });
             };
 
-            // 🆕 Logic for direct deletion without opening the global dialog
+            // Logic for direct deletion without opening the global dialog
             const performDelete = async (id) => {
                 await supabase.from('transactions').delete().eq('id', id);
                 showToast("已删除");
@@ -1274,9 +1236,18 @@
 
             if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
 
-            // ⚠️ Pass performDelete to EditorPage
-            if (view.name === 'editor') return <EditorPage transaction={view.transaction} onClose={()=>setView({name:'main'})} onSave={handleSave} onDelete={performDelete} />;
-            if (view.name === 'period') return <PeriodPage title={view.title} type={view.type} total={view.total} allTransactions={transactions} onClose={()=>setView({name:'main'})} initialCategory={view.initialCategory} />;
+            // ⚠️ Pass performDelete to EditorPage and handleEditorSave
+            if (view.name === 'editor') return <EditorPage transaction={view.transaction} onClose={()=>setView({name:'main'})} onSave={handleEditorSave} onDelete={performDelete} />;
+            // 🆕 Pass onViewEditor handler to navigate from PeriodPage to EditorPage
+            if (view.name === 'period') return <PeriodPage 
+                title={view.title} 
+                type={view.type} 
+                total={view.total} 
+                allTransactions={transactions} 
+                onClose={()=>setView({name:'main'})} 
+                initialCategory={view.initialCategory} 
+                onViewEditor={(t) => setView({ name: 'editor', transaction: t })} 
+            />;
 
             return (
                 <div 
@@ -1414,7 +1385,7 @@
                                             <button key={c} onClick={() => setForm({...form, category: c})} className={`py-2 rounded-xl text-xs ${form.category === c ? 'bg-white text-black' : 'bg-[#2C2C2E] text-gray-400'}`}>{c}</button>
                                         ))}
                                     </div>
-                                    <button onClick={() => handleSave(false)} className="w-full py-4 bg-white text-black rounded-2xl font-bold mt-2 flex items-center justify-center gap-2">{loading && <Loader2 className="animate-spin" />} 确认</button>
+                                    <button onClick={() => handleQuickSave()} className="w-full py-4 bg-white text-black rounded-2xl font-bold mt-2 flex items-center justify-center gap-2">{loading && <Loader2 className="animate-spin" />} 确认</button>
                                 </div>
                              </div>
                         </div>
