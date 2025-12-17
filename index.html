@@ -122,7 +122,7 @@
         .page-container {
             position: fixed; 
             top: 0; left: 0; width: 100%; height: 100%;
-            overflow: hidden; 
+            overflow: hidden; /* 🌟 关键：容器不滚动 */
             background-color: #09090B;
             z-index: 50;
             -webkit-overflow-scrolling: touch;
@@ -695,9 +695,9 @@
             // 🌟 修复：默认时间维度逻辑
             const [timeDimension, setTimeDimension] = useState(() => {
                 if (type === 'today') return 'day';
-                if (type === 'week') return 'week';
-                if (type === 'month') return 'month';
-                if (type === 'year') return 'year';
+                if (type === 'week') return 'day';   // 本周 -> 按日展示
+                if (type === 'month') return 'day';  // 本月 -> 按日展示
+                if (type === 'year') return 'month'; // 本年 -> 按月展示
                 return 'day'; 
             });
 
@@ -1022,11 +1022,8 @@
                         <div className="bg-[#2C2C2E] p-2.5 rounded-full shadow-lg border border-white/10"><Loader2 className={`text-white ${isRefreshing ? 'animate-spin' : ''}`} size={20} style={{ transform: `rotate(${pullY * 2}deg)` }} /></div>
                     </div>
 
-                    {/* 🔥 核心修改：将主界面包裹在容器中，并根据 view 状态进行缩放，制造景深效果 */}
-                    <div 
-                        className={`h-full w-full transition-transform duration-300 ease-out origin-center ${view.name !== 'main' ? 'scale-[0.93] opacity-60' : 'scale-100 opacity-100'}`}
-                        style={{ borderRadius: view.name !== 'main' ? '20px' : '0px', overflow: 'hidden' }}
-                    >
+                    {/* 🔥 核心修改：主界面容器不再缩放，保持全屏且静态 */}
+                    <div className="h-full w-full overflow-hidden bg-art-bg">
                         <main ref={scrollContainerRef} className="h-full w-full overflow-y-auto no-scrollbar pb-safe transition-transform duration-300 ease-out" style={{ transform: `translateY(${pullY}px)` }}>
                             {activeTab === 'home' && (
                                 <div className="animate-fade-in">
@@ -1035,6 +1032,7 @@
                                         <img src={headerImage} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" />
                                         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/80"></div>
                                         
+                                        {/* 主页顶部图片上传按钮 */}
                                         <label className="absolute bottom-4 right-4 z-30 p-2 bg-black/30 backdrop-blur-md rounded-full text-white/70 hover:text-white transition-colors cursor-pointer active:scale-90">
                                             <Camera size={16} />
                                             <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
@@ -1070,8 +1068,15 @@
                             {activeTab === 'flow' && (
                                 <div className="pb-24 animate-fade-in">
                                     <div className="relative h-[140px] w-full overflow-hidden shrink-0">
-                                        <img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover" />
+                                        <img src={headerImage} className="absolute inset-0 w-full h-full object-cover" />
                                         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#000000]"></div>
+                                        
+                                        {/* 主页流水 Tab 顶部图片上传按钮 */}
+                                        <label className="absolute bottom-4 right-4 z-30 p-2 bg-black/30 backdrop-blur-md rounded-full text-white/70 hover:text-white transition-colors cursor-pointer active:scale-90">
+                                            <Camera size={16} />
+                                            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                                        </label>
+
                                         <div className="absolute top-0 left-0 right-0 h-full flex flex-col justify-end p-6 pb-4 z-10 pt-safe">
                                             <div className="text-[18px] font-bold text-white mb-3">账单流水</div>
                                             <div className="text-[12px] text-white/60 mb-0.5">总支出</div>
