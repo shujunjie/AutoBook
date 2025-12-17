@@ -105,12 +105,12 @@
     <script type="module" src="https://esm.sh/run" defer></script>
 
     <style>
-        /* 🌟 修改全局背景色 */
+        /* 全局隐藏滚动条逻辑 */
         html, body, #root {
             height: 100%;
             width: 100%;
             overflow: hidden; 
-            background-color: #09090B; /* Deep Zinc */
+            background-color: #000000;
         }
 
         .no-scrollbar {
@@ -904,8 +904,8 @@
             }, [transactions, groupByDay]);
 
             return (
-                <div className="mb-6 animate-slide-up-stagger" style={{ animationDelay: '0.1s' }}>
-                    <div className="flex justify-between items-center py-4 px-4 bg-[#1C1C1E] rounded-[24px] transition-colors cursor-pointer mb-2" onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}>
+                <div className="mb-4 animate-slide-up-stagger" style={{ animationDelay: '0.1s' }}>
+                    <div className="flex justify-between items-center py-2.5 px-3 bg-[#1C1C1E] rounded-2xl transition-colors cursor-pointer mb-1" onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}>
                         <div className="flex flex-col"><span className="text-[18px] font-bold text-white">{label}</span></div>
                         <div className="flex items-center gap-3">
                             <div className="text-right">
@@ -938,7 +938,7 @@
 
         const TransactionItem = ({ t, onClick }) => (
             // ... (TransactionItem Code Remains Unchanged)
-            <div onClick={onClick} className="flex items-center justify-between py-4 px-2 active:bg-white/5 rounded-xl transition-colors cursor-pointer">
+            <div onClick={onClick} className="flex items-center justify-between py-3 px-3 active:bg-white/5 rounded-xl transition-colors cursor-pointer">
                 <div className="flex items-center gap-4 overflow-hidden">
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${getCategoryColor(t.category).bg} ${getCategoryColor(t.category).text}`}>
                         {React.cloneElement(getCategoryIcon(t.category), { size: 18 })}
@@ -1119,8 +1119,8 @@
         const MonthGroup = ({ year, month, totalExpense, days, onViewEditor }) => {
             const [isExpanded, setIsExpanded] = useState(true);
             return (
-                <div className="mb-6">
-                    <div className="flex justify-between items-center py-4 px-4 bg-[#1C1C1E] rounded-[24px] transition-colors cursor-pointer mb-2 sticky z-10" style={{ top: '0px' }} onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}>
+                <div className="mb-4 animate-slide-up-stagger" style={{ animationDelay: '0.1s' }}>
+                    <div className="flex justify-between items-center py-2.5 px-3 bg-[#1C1C1E] rounded-2xl transition-colors cursor-pointer mb-1" onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}>
                         <div className="flex items-baseline gap-1.5"><span className="text-[20px] font-bold text-white">{month}月</span><span className="text-[13px] text-art-textSub">{year}</span></div>
                         <div className="flex items-center gap-3">
                             <div className="text-right"><div className="text-[11px] text-art-textSub opacity-60 mb-0.5">总支出</div><div className="text-[14px] text-white font-medium">{formatMoney(totalExpense)}</div></div>
@@ -1221,7 +1221,8 @@
                             </button>
                         </div>
 
-                        <div className="absolute inset-0 flex flex-col items-center pt-[80px] z-10 animate-bounce-in pointer-events-none"> 
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pt-10 z-10 animate-bounce-in pointer-events-none"> 
+                            {/* 🔥 MOVED UP: Added margin-bottom to separate from amount */}
                             <div className={`w-16 h-16 rounded-[24px] flex items-center justify-center mb-6 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] ${currentCategoryColor.bg} ${currentCategoryColor.text} border border-white/10 backdrop-blur-xl`}>
                                 {React.cloneElement(getCategoryIcon(form.category), { size: 32, strokeWidth: 1.5 })}
                             </div>
@@ -1238,6 +1239,7 @@
                                 />
                             </div>
                             
+                            {/* Title moved below amount for better spacing */}
                             <div className="text-[13px] text-white/30 mt-2 font-medium tracking-widest uppercase mb-1">{transaction ? 'EDIT RECORD' : 'NEW RECORD'}</div>
                             <div className="text-[13px] text-white/40 font-medium tracking-wide">{form.category}</div>
                         </div>
