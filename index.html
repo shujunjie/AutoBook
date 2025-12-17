@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#09090B">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <title>AI 随手记</title>
     
@@ -22,15 +22,15 @@
                     },
                     colors: {
                         art: {
-                            bg: '#000000',      // 纯黑背景
-                            card: '#1C1C1E',    // 极深灰卡片 (iOS System Gray 6)
-                            cardLight: '#2C2C2E', // 稍亮 (iOS System Gray 5)
+                            bg: '#09090B',      // 🌟 修改：深岩灰背景，不再是纯黑
+                            card: '#18181B',    // 配合深色背景调整卡片颜色 (Zinc-900)
+                            cardLight: '#27272A', // (Zinc-800)
                             accent: '#4ADE80',  // 绿色/青色点缀
                             cyan: '#2DD4BF',    // 图2中的青色
                             blue: '#40C4FF',    // 仿图1的金额蓝
                             textMain: '#FFFFFF',
-                            textSub: '#8E8E93',
-                            border: '#2C2C2E',
+                            textSub: '#A1A1AA', // Zinc-400
+                            border: '#27272A',
                         }
                     },
                     animation: {
@@ -38,11 +38,12 @@
                         'slide-out-right': 'slideOutRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'fade-in': 'fadeIn 0.4s ease-out forwards',
                         'fade-out': 'fadeOut 0.5s ease-in forwards',
-                        'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'slide-down': 'slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'slide-up-stagger': 'slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                         'bounce-in': 'bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
                     },
                     keyframes: {
                         slideInRight: {
@@ -76,6 +77,12 @@
                         bounceIn: {
                             '0%': { transform: 'scale(0.8)', opacity: '0' },
                             '100%': { transform: 'scale(1)', opacity: '1' },
+                        },
+                        shake: {
+                            '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                            '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                            '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                            '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
                         }
                     }
                 }
@@ -98,12 +105,12 @@
     <script type="module" src="https://esm.sh/run" defer></script>
 
     <style>
-        /* 全局隐藏滚动条逻辑 */
+        /* 🌟 修改全局背景色 */
         html, body, #root {
             height: 100%;
             width: 100%;
             overflow: hidden; 
-            background-color: #000000;
+            background-color: #09090B; /* Deep Zinc */
         }
 
         .no-scrollbar {
@@ -135,16 +142,16 @@
             top: 0; left: 0; width: 100%; height: 100%;
             overflow-y: auto;
             overflow-x: hidden; 
-            background-color: #000000;
+            background-color: #09090B; /* 🌟 页面容器背景色 */
             z-index: 50;
             -webkit-overflow-scrolling: touch;
         }
         .page-enter { animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .glass-nav {
-            background: rgba(18, 18, 18, 0.8);
+            background: rgba(9, 9, 11, 0.8); /* 🌟 适配新背景色的磨砂 */
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
         }
     </style>
 </head>
@@ -175,7 +182,70 @@
             if (window.navigator && window.navigator.vibrate) {
                 if (type === 'light') window.navigator.vibrate(10);
                 else window.navigator.vibrate(20);
+                if (type === 'error') window.navigator.vibrate([50, 50, 50]);
             }
+        };
+
+        const getBeijingTime = () => {
+            const d = new Date();
+            const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+            const beijingTime = new Date(utc + (3600000 * 8));
+            const h = String(beijingTime.getHours()).padStart(2, '0');
+            const m = String(beijingTime.getMinutes()).padStart(2, '0');
+            return `${h}:${m}`;
+        };
+
+        // 🆕 自定义 Hook: 实现 iOS 风格的左滑返回
+        const useSwipeBack = (onClose) => {
+            const [offset, setOffset] = useState(0);
+            const [isDragging, setIsDragging] = useState(false);
+            const startX = useRef(0);
+
+            const handleTouchStart = (e) => {
+                // 只有从屏幕左边缘 (50px以内) 开始滑动才触发
+                if (e.touches[0].clientX < 50) {
+                    startX.current = e.touches[0].clientX;
+                    setIsDragging(true);
+                } else {
+                    setIsDragging(false);
+                }
+            };
+
+            const handleTouchMove = (e) => {
+                if (!isDragging) return;
+                const currentX = e.touches[0].clientX;
+                const delta = currentX - startX.current;
+                // 只能向右滑
+                if (delta > 0) {
+                    setOffset(delta);
+                }
+            };
+
+            const handleTouchEnd = () => {
+                if (!isDragging) return;
+                setIsDragging(false);
+                // 阈值：滑动超过 100px 触发返回
+                if (offset > 100) {
+                    onClose();
+                } else {
+                    // 回弹
+                    setOffset(0);
+                }
+            };
+
+            // 返回绑定到元素的属性和样式
+            return {
+                bind: {
+                    onTouchStart: handleTouchStart,
+                    onTouchMove: handleTouchMove,
+                    onTouchEnd: handleTouchEnd
+                },
+                style: {
+                    transform: `translateX(${offset}px)`,
+                    transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)', // iOS spring curve approximation
+                    zIndex: 200 // 保证滑动时在最上层
+                }
+            };
         };
 
         const getCategoryIcon = (category) => {
@@ -226,12 +296,12 @@
             }
         };
 
-        const Toast = ({ message }) => {
+        const Toast = ({ message, type = 'success' }) => {
             if (!message) return null;
             return (
                 <div className="fixed top-safe left-1/2 -translate-x-1/2 z-[200] mt-4 animate-fade-in pointer-events-none">
-                    <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#333] shadow-xl border border-white/10">
-                        <CheckCircle size={16} className="text-[#30D158]" />
+                    <div className={`flex items-center gap-2 px-4 py-2.5 rounded-full shadow-xl border ${type === 'error' ? 'bg-[#27272A] border-red-500/30' : 'bg-[#27272A] border-white/10'}`}>
+                        {type === 'error' ? <AlertCircle size={16} className="text-red-500" /> : <CheckCircle size={16} className="text-[#30D158]" />}
                         <span className="text-[13px] font-medium text-white">{message}</span>
                     </div>
                 </div>
@@ -267,16 +337,14 @@
             );
         };
 
-        // 🆕 自定义日历选择器 (Bottom Sheet)
+        // Custom Date Picker
         const CustomDatePickerSheet = ({ isOpen, onClose, currentDateStr, onSelect }) => {
             if (!isOpen) return null;
             
-            // State for calendar navigation
             const [viewDate, setViewDate] = useState(() => {
                 return currentDateStr ? new Date(currentDateStr) : new Date();
             });
 
-            // Effect to reset viewDate when modal opens
             useEffect(() => {
                 if (isOpen) {
                     setViewDate(currentDateStr ? new Date(currentDateStr) : new Date());
@@ -284,15 +352,12 @@
             }, [isOpen, currentDateStr]);
 
             const daysInMonth = getDaysInMonth(viewDate);
-            const startDay = startOfMonth(viewDate).getDay(); // 0 is Sunday
-            // Adjust so Monday is 0 if needed, but let's stick to Sunday = 0 for standard calc
-            // If we want Monday start: (startDay + 6) % 7
+            const startDay = startOfMonth(viewDate).getDay(); 
             
             const weeks = [];
             let day = 1;
             let currentWeek = [];
 
-            // Empty slots for previous month
             for (let i = 0; i < startDay; i++) {
                 currentWeek.push(null);
             }
@@ -336,33 +401,26 @@
                             <button onClick={onClose} className="p-1 text-art-textSub active:opacity-60 bg-art-cardLight rounded-full"><X size={18} /></button>
                         </div>
 
-                        {/* Month Nav */}
                         <div className="flex items-center justify-between mb-4 bg-[#2C2C2E] rounded-xl p-2">
                             <button onClick={() => changeMonth(-1)} className="p-2 text-white/70 active:text-white"><ChevronLeft size={20} /></button>
                             <span className="text-[15px] font-bold text-white font-mono">{format(viewDate, 'yyyy年 MM月')}</span>
                             <button onClick={() => changeMonth(1)} className="p-2 text-white/70 active:text-white"><ChevronRight size={20} /></button>
                         </div>
 
-                        {/* Week Headers */}
                         <div className="grid grid-cols-7 mb-2 text-center">
                             {['日', '一', '二', '三', '四', '五', '六'].map(d => (
                                 <div key={d} className="text-[12px] text-art-textSub py-2">{d}</div>
                             ))}
                         </div>
 
-                        {/* Days Grid */}
                         <div className="space-y-1">
                             {weeks.map((week, wIdx) => (
                                 <div key={wIdx} className="grid grid-cols-7 text-center">
                                     {week.map((d, dIdx) => {
                                         if (!d) return <div key={dIdx} />;
-                                        
-                                        // Check if this day matches selected date
                                         const isSelected = currentDateStr && 
                                             format(new Date(currentDateStr), 'yyyy-MM') === format(viewDate, 'yyyy-MM') && 
                                             parseInt(currentDateStr.split('-')[2]) === d;
-                                        
-                                        // Check if today
                                         const isToday = isSameDay(new Date(viewDate.getFullYear(), viewDate.getMonth(), d), new Date());
 
                                         return (
@@ -386,7 +444,6 @@
             );
         };
 
-        // 🆕 自定义时间选择器 (Bottom Sheet)
         const CustomTimePickerSheet = ({ isOpen, onClose, currentTimeStr, onSelect }) => {
             if (!isOpen) return null;
 
@@ -395,13 +452,37 @@
 
             const [selectedHour, setSelectedHour] = useState(currentTimeStr ? currentTimeStr.split(':')[0] : '00');
             const [selectedMinute, setSelectedMinute] = useState(currentTimeStr ? currentTimeStr.split(':')[1] : '00');
+            
+            const hourRef = useRef(null);
+            const minuteRef = useRef(null);
 
             useEffect(() => {
-                if (isOpen && currentTimeStr) {
-                    setSelectedHour(currentTimeStr.split(':')[0]);
-                    setSelectedMinute(currentTimeStr.split(':')[1]);
+                if (isOpen) {
+                    const timeToUse = currentTimeStr || getBeijingTime();
+                    const [h, m] = timeToUse.split(':');
+                    setSelectedHour(h);
+                    setSelectedMinute(m);
+                    
+                    setTimeout(() => {
+                        if (hourRef.current) hourRef.current.scrollTop = parseInt(h) * 40;
+                        if (minuteRef.current) minuteRef.current.scrollTop = parseInt(m) * 40;
+                    }, 10);
                 }
             }, [isOpen, currentTimeStr]);
+
+            const handleHourScroll = (e) => {
+                const index = Math.round(e.target.scrollTop / 40);
+                if (hours[index] && hours[index] !== selectedHour) {
+                    setSelectedHour(hours[index]);
+                }
+            };
+
+            const handleMinuteScroll = (e) => {
+                const index = Math.round(e.target.scrollTop / 40);
+                if (minutes[index] && minutes[index] !== selectedMinute) {
+                    setSelectedMinute(minutes[index]);
+                }
+            };
 
             const handleConfirm = () => {
                 onSelect(`${selectedHour}:${selectedMinute}`);
@@ -419,15 +500,21 @@
                         </div>
 
                         <div className="flex-1 flex relative overflow-hidden">
-                            {/* Selection Highlight */}
                             <div className="absolute top-1/2 left-0 right-0 h-[40px] -mt-[20px] bg-white/10 pointer-events-none z-0"></div>
 
-                            {/* Hours */}
-                            <div className="flex-1 overflow-y-auto no-scrollbar py-[120px] text-center snap-y snap-mandatory relative z-10">
+                            <div 
+                                ref={hourRef}
+                                onScroll={handleHourScroll}
+                                className="flex-1 overflow-y-auto no-scrollbar py-[110px] text-center snap-y snap-mandatory relative z-10"
+                            >
                                 {hours.map(h => (
                                     <div 
                                         key={h} 
-                                        onClick={() => { setSelectedHour(h); haptic('light'); }}
+                                        onClick={() => { 
+                                            setSelectedHour(h); 
+                                            if (hourRef.current) hourRef.current.scrollTop = parseInt(h) * 40;
+                                            haptic('light'); 
+                                        }}
                                         className={`h-[40px] flex items-center justify-center snap-center transition-all ${h === selectedHour ? 'text-white font-bold text-[20px]' : 'text-white/30 text-[16px]'}`}
                                     >
                                         {h}
@@ -435,15 +522,21 @@
                                 ))}
                             </div>
 
-                            {/* Separator */}
                             <div className="flex items-center justify-center text-white/30 font-bold">:</div>
 
-                            {/* Minutes */}
-                            <div className="flex-1 overflow-y-auto no-scrollbar py-[120px] text-center snap-y snap-mandatory relative z-10">
+                            <div 
+                                ref={minuteRef}
+                                onScroll={handleMinuteScroll}
+                                className="flex-1 overflow-y-auto no-scrollbar py-[110px] text-center snap-y snap-mandatory relative z-10"
+                            >
                                 {minutes.map(m => (
                                     <div 
                                         key={m} 
-                                        onClick={() => { setSelectedMinute(m); haptic('light'); }}
+                                        onClick={() => { 
+                                            setSelectedMinute(m); 
+                                            if (minuteRef.current) minuteRef.current.scrollTop = parseInt(m) * 40;
+                                            haptic('light'); 
+                                        }}
                                         className={`h-[40px] flex items-center justify-center snap-center transition-all ${m === selectedMinute ? 'text-white font-bold text-[20px]' : 'text-white/30 text-[16px]'}`}
                                     >
                                         {m}
@@ -499,7 +592,7 @@
                     
                     <div className="mb-12 flex flex-col items-center gap-4">
                         <Loader2 className="animate-spin text-art-textSub" size={20} />
-                        <p className="text-[10px] text-[#333] font-mono">VERSION 1.1.0</p>
+                        <p className="text-[10px] text-[#333] font-mono">VERSION 1.3.0</p>
                     </div>
                 </div>
             );
@@ -865,6 +958,9 @@
             const [isSidebarOpen, setIsSidebarOpen] = useState(false);
             const [isLoading, setIsLoading] = useState(true);
             
+            // 🆕 Hook for Swipe Back
+            const swipeBack = useSwipeBack(onClose);
+
             useEffect(() => {
                 const timer = setTimeout(() => setIsLoading(false), 500); 
                 return () => clearTimeout(timer);
@@ -972,10 +1068,14 @@
             const finalTitle = (activeFilters.category === 'all' && type !== 'month') ? title : displayTitle;
 
             return (
-                <div className="page-container page-enter pb-safe flex flex-col z-[100] bg-[#000000] no-scrollbar">
+                <div 
+                    className="page-container page-enter pb-safe flex flex-col z-[100] bg-[#09090B] no-scrollbar"
+                    style={swipeBack.style}
+                    {...swipeBack.bind}
+                >
                     <div className="relative h-[200px] w-full overflow-hidden shrink-0 transition-all duration-700 ease-out transform" style={{ opacity: isLoading ? 0.9 : 1, transform: isLoading ? 'scale(1.02)' : 'scale(1)' }}>
                         <img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-[#000000]"></div>
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-[#09090B]"></div>
                         <div className="absolute top-0 left-0 right-0 pt-safe px-4 h-[60px] flex items-center justify-between z-20">
                             <button onClick={onClose} className="p-2 -ml-2 text-white flex items-center gap-1 active:opacity-60 transition-opacity">
                                 <ArrowLeft size={24} /> 
@@ -1051,8 +1151,11 @@
             const [isLoading, setIsLoading] = useState(true);
             const [isDateSheetOpen, setIsDateSheetOpen] = useState(false);
             const [isTimeSheetOpen, setIsTimeSheetOpen] = useState(false);
+            const [shakeError, setShakeError] = useState(false); 
+            
+            // 🆕 Hook for Swipe Back (Editor Page also needs swipe back)
+            const swipeBack = useSwipeBack(onClose);
 
-            // Simulate entry loading
             useEffect(() => {
                 const timer = setTimeout(() => setIsLoading(false), 300);
                 return () => clearTimeout(timer);
@@ -1060,10 +1163,7 @@
 
             const getInitialTime = () => {
                 if (transaction) return getRawTimeStr(transaction.date); 
-                const now = new Date();
-                const h = String(now.getHours()).padStart(2, '0');
-                const m = String(now.getMinutes()).padStart(2, '0');
-                return `${h}:${m}`;
+                return getBeijingTime(); 
             };
 
             const [form, setForm] = useState({ 
@@ -1077,10 +1177,15 @@
             const [loading, setLoading] = useState(false);
             
             const handleSave = async () => {
-                if (!form.amount) return;
+                if (!form.amount) {
+                    setShakeError(true);
+                    haptic('error'); 
+                    setTimeout(() => setShakeError(false), 500); 
+                    return;
+                }
+
                 setLoading(true);
                 const isoDateTime = `${form.date}T${form.time}:00.000Z`;
-                // 调用父组件传递的 onSave，传递表单数据和 ID
                 await onSave({ ...form, date: isoDateTime }, transaction?.id);
                 setLoading(false);
             };
@@ -1091,59 +1196,57 @@
 
             const currentCategoryColor = getCategoryColor(form.category);
 
-            // 固定页面的关键：fixed inset-0 overflow-hidden
             return (
-                <div className="fixed inset-0 z-[100] bg-[#000000] overflow-hidden flex flex-col">
+                <div 
+                    className="fixed inset-0 z-[100] bg-[#09090B] overflow-hidden flex flex-col"
+                    style={swipeBack.style}
+                    {...swipeBack.bind}
+                >
                     <ConfirmDialog isOpen={showDeleteConfirm} onCancel={() => setShowDeleteConfirm(false)} onConfirm={handleConfirmDelete} title="确定删除这条记录？" message="此操作无法撤销，数据将被永久移除。" />
                     <CustomDatePickerSheet isOpen={isDateSheetOpen} onClose={() => setIsDateSheetOpen(false)} currentDateStr={form.date} onSelect={(val) => setForm({...form, date: val})} />
                     <CustomTimePickerSheet isOpen={isTimeSheetOpen} onClose={() => setIsTimeSheetOpen(false)} currentTimeStr={form.time} onSelect={(val) => setForm({...form, time: val})} />
 
-                    {/* ✨ Immersive Header Area - Fixed height, no scroll. Reduced height to 240px. */}
+                    {/* ✨ Immersive Header Area */}
                     <div className="relative w-full overflow-hidden shrink-0 transition-all duration-500 ease-out" style={{ height: '240px', opacity: isLoading ? 0.5 : 1 }}>
-                        {/* Background Gradient based on Category */}
-                        <div className={`absolute inset-0 bg-gradient-to-b ${currentCategoryColor.gradient} via-black/80 to-[#000000] opacity-30`}></div>
+                        <div className={`absolute inset-0 bg-gradient-to-b ${currentCategoryColor.gradient} via-black/80 to-[#09090B] opacity-30`}></div>
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 mix-blend-overlay"></div>
 
-                        {/* Top Nav */}
                         <div className="absolute top-0 left-0 right-0 pt-safe px-4 h-[60px] flex items-center justify-between z-20">
                             <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 backdrop-blur-md active:bg-white/10 transition-colors text-white">
                                 <ArrowLeft size={20} />
                             </button>
-                            {/* DETAIL span removed here */}
                             <button onClick={handleSave} className="px-4 h-9 rounded-full bg-white text-black font-bold text-[13px] active:scale-95 transition-transform flex items-center gap-2">
                                 {loading && <Loader2 size={12} className="animate-spin" />}
                                 {transaction ? '保存' : '完成'}
                             </button>
                         </div>
 
-                        {/* Central Focus Area - Reduced pt */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pt-6 z-10 animate-bounce-in">
-                            {/* Category Icon with Glow */}
+                        <div className="absolute inset-0 flex flex-col items-center pt-[80px] z-10 animate-bounce-in pointer-events-none"> 
                             <div className={`w-16 h-16 rounded-[24px] flex items-center justify-center mb-6 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] ${currentCategoryColor.bg} ${currentCategoryColor.text} border border-white/10 backdrop-blur-xl`}>
                                 {React.cloneElement(getCategoryIcon(form.category), { size: 32, strokeWidth: 1.5 })}
                             </div>
                             
-                            {/* Huge Amount Input */}
-                            <div className="flex items-baseline justify-center w-full px-8 relative">
-                                <span className="text-[32px] font-light text-white/40 absolute left-8 top-2">¥</span>
+                            <div className={`flex items-baseline justify-center w-full px-8 relative pointer-events-auto ${shakeError ? 'animate-shake text-red-500' : ''}`}> 
+                                <span className={`text-[32px] font-light absolute left-8 top-2 transition-colors ${shakeError ? 'text-red-500/50' : 'text-white/40'}`}>¥</span>
                                 <input 
                                     type="number" 
                                     value={form.amount} 
                                     onChange={(e) => setForm({...form, amount: e.target.value})} 
                                     placeholder="0.00" 
-                                    className="w-full bg-transparent text-[56px] font-bold text-white placeholder-white/10 font-mono text-center outline-none caret-art-accent tracking-tighter"
+                                    className={`w-full bg-transparent text-[56px] font-bold placeholder-white/10 font-mono text-center outline-none caret-art-accent tracking-tighter transition-colors ${shakeError ? 'text-red-500' : 'text-white'}`}
                                     autoFocus={!transaction} 
                                 />
                             </div>
-                            <div className="text-[13px] text-white/40 mt-2 font-medium tracking-wide">{form.category}</div>
+                            
+                            <div className="text-[13px] text-white/30 mt-2 font-medium tracking-widest uppercase mb-1">{transaction ? 'EDIT RECORD' : 'NEW RECORD'}</div>
+                            <div className="text-[13px] text-white/40 font-medium tracking-wide">{form.category}</div>
                         </div>
                     </div>
                     
                     {/* ✨ Content Card Area - Fixed Layout (overflow-hidden) */}
                     <div className="flex-1 px-4 -mt-8 relative z-30 animate-slide-up-stagger overflow-hidden" style={{ animationDelay: '0.1s' }}>
-                        <div className="bg-[#121212] rounded-t-[32px] h-full border-t border-[#2C2C2E] p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+                        <div className="bg-[#121212] rounded-t-[32px] h-full border-t border-[#2C2C2E] p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl pb-32">
                             
-                            {/* Section: Category Selector */}
                             <div className="mb-6">
                                 <h4 className="text-[11px] text-white/30 font-bold mb-3 ml-1 uppercase tracking-widest flex items-center gap-2"><Tag size={10} /> Change Category</h4>
                                 <div className="grid grid-cols-4 gap-3">
@@ -1162,11 +1265,9 @@
                                 </div>
                             </div>
 
-                            {/* Section: Details Form */}
                             <div className="mb-4">
                                 <h4 className="text-[11px] text-white/30 font-bold mb-3 ml-1 uppercase tracking-widest flex items-center gap-2"><PenLine size={10} /> Details</h4>
                                 <div className="bg-[#1C1C1E] rounded-[24px] border border-white/5 overflow-hidden">
-                                    {/* Merchant Row */}
                                     <div className="flex items-center px-5 py-3.5 border-b border-white/5 group transition-colors hover:bg-white/5">
                                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50"><ShoppingBag size={16} /></div>
                                         <div className="flex-1">
@@ -1175,7 +1276,6 @@
                                         </div>
                                     </div>
                                     
-                                    {/* Date & Time Row - REPLACED INPUTS WITH DIVS */}
                                     <div className="flex items-center px-5 py-3.5 border-b border-white/5 group transition-colors hover:bg-white/5">
                                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50"><Clock size={16} /></div>
                                         <div className="flex-1 flex gap-4">
@@ -1191,7 +1291,6 @@
                                         </div>
                                     </div>
 
-                                    {/* Note Row */}
                                     <div className="flex items-start px-5 py-3.5 group transition-colors hover:bg-white/5">
                                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50 mt-0.5"><MessageCircle size={16} /></div>
                                         <div className="flex-1">
@@ -1218,14 +1317,13 @@
         // --- Main App ---
 
         function App() {
+            // ... (App Code mostly unchanged, except removing isAddModalOpen and related UI)
             const [showSplash, setShowSplash] = useState(true);
             const [activeTab, setActiveTab] = useState('home');
             const [transactions, setTransactions] = useState([]);
             const [loading, setLoading] = useState(false);
             const [currentDate, setCurrentDate] = useState(new Date());
             
-            const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-            const [currentTransaction, setCurrentTransaction] = useState(null); 
             const [toast, setToast] = useState(null);
             
             const [view, setView] = useState({ name: 'main' }); 
@@ -1238,13 +1336,10 @@
             const startY = useRef(0);
             const scrollContainerRef = useRef(null);
             
-            const getNowTime = () => {
-                const now = new Date();
-                return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const showToast = (msg, type = 'success') => { 
+                setToast({ message: msg, type }); 
+                setTimeout(() => setToast(null), 2000); 
             };
-            const [form, setForm] = useState({ amount: '', merchant: '', category: '餐饮', date: new Date().toISOString().split('T')[0], time: getNowTime(), note: '' });
-
-            const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2000); };
 
             useEffect(() => {
                 fetchTransactions();
@@ -1290,40 +1385,33 @@
             // 专门处理详情页的保存（支持传参）
             const handleEditorSave = async (data, id) => {
                 setLoading(true);
-                const payload = { 
-                    amount: parseFloat(data.amount), 
-                    merchant: data.merchant || (data.category), 
-                    category: data.category, 
-                    date: data.date, // 已经是 ISO 字符串了
-                    note: data.note 
-                };
-                
-                if (id) {
-                    await supabase.from('transactions').update(payload).eq('id', id);
-                    showToast("已更新");
-                } else {
-                    await supabase.from('transactions').insert([payload]);
-                    showToast("记账成功");
+                try {
+                    const payload = { 
+                        amount: parseFloat(data.amount), 
+                        merchant: data.merchant || (data.category), 
+                        category: data.category, 
+                        date: data.date, // 已经是 ISO 字符串了
+                        note: data.note 
+                    };
+                    
+                    if (id) {
+                        const { error } = await supabase.from('transactions').update(payload).eq('id', id);
+                        if (error) throw error;
+                        showToast("已更新");
+                    } else {
+                        const { error } = await supabase.from('transactions').insert([payload]);
+                        if (error) throw error;
+                        showToast("记账成功");
+                    }
+                    
+                    setView({ name: 'main' }); // 保存后关闭页面
+                    fetchTransactions(); // 刷新列表
+                } catch (error) {
+                    console.error("Save failed:", error);
+                    showToast("保存失败，请重试", 'error');
+                } finally {
+                    setLoading(false);
                 }
-                
-                setView({ name: 'main' }); // 保存后关闭页面
-                setLoading(false);
-                fetchTransactions(); // 刷新列表
-            };
-
-            // 快捷记账的保存（使用 form 状态）
-            const handleQuickSave = async () => {
-                if (!form.amount) return;
-                setLoading(true);
-                const isoDateTime = `${form.date}T${form.time}:00.000Z`;
-
-                const payload = { amount: parseFloat(form.amount), merchant: form.merchant || (form.category), category: form.category, date: isoDateTime, note: form.note };
-                
-                await supabase.from('transactions').insert([payload]);
-                showToast("记账成功");
-                setIsAddModalOpen(false); 
-                setForm({ ...form, amount: '', merchant: '', note: '', time: getNowTime() });
-                setLoading(false);
             };
 
             const handleDeleteClick = (id) => {
@@ -1438,7 +1526,7 @@
                     onTouchMove={handleTouchMove} 
                     onTouchEnd={handleTouchEnd}
                 >
-                    <Toast message={toast} />
+                    <Toast message={toast?.message} type={toast?.type} />
                     
                     <ConfirmDialog 
                         isOpen={confirmDialog.isOpen} 
@@ -1469,7 +1557,7 @@
                                     <div className="absolute top-6 left-6 z-10">
                                         <div className="text-[14px] text-white/70 font-medium mb-1">本月收支统计</div>
                                         <div className="text-[12px] text-white/50">总支出</div>
-                                        <div className="text-[42px] font-bold text-white font-mono tracking-tight -mt-1">{formatMoney(stats.monthTotal)}</div>
+                                        <div className="text-[42px] font-bold text-white font-mono tracking-tighter leading-none -ml-1">{formatMoney(stats.monthTotal)}</div>
                                     </div>
                                 </div>
 
@@ -1544,34 +1632,20 @@
                     </main>
 
                     <div className="fixed bottom-[30px] left-1/2 -translate-x-1/2 z-50">
-                        <button onClick={() => { setIsAddModalOpen(true); haptic('light'); }} className="w-[56px] h-[56px] bg-[#E9E9EB] rounded-full flex items-center justify-center shadow-[0_4px_20px_rgba(255,255,255,0.2)] active:scale-90 transition-transform text-black border-4 border-[#121212]"><Plus size={28} strokeWidth={2.5} /></button>
+                        {/* 🆕 Open unified EditorPage instead of modal */}
+                        <button onClick={() => { setView({ name: 'editor', transaction: null }); haptic('light'); }} className="w-[56px] h-[56px] bg-[#E9E9EB] rounded-full flex items-center justify-center shadow-[0_4px_20px_rgba(255,255,255,0.2)] active:scale-90 transition-transform text-black border-4 border-[#121212]"><Plus size={28} strokeWidth={2.5} /></button>
                     </div>
 
                     <nav className="fixed bottom-0 w-full bg-[#121212]/95 backdrop-blur-xl border-t border-white/5 pb-safe pt-2 z-40">
                         <div className="grid grid-cols-3 h-[50px] relative text-[10px] font-medium text-art-textSub">
                             <button onClick={() => setActiveTab('flow')} className={`flex flex-col items-center justify-center gap-1 ${activeTab==='flow' ? 'text-white' : ''}`}><FileText size={22} strokeWidth={activeTab==='flow'?2.5:2} /> 流水</button>
-                            <div className="flex flex-col items-center justify-end pb-1 opacity-50"><span>记一笔</span></div>
+                            {/* 🆕 Open unified EditorPage */}
+                            <div className="flex flex-col items-center justify-end pb-1 opacity-50" onClick={() => { setView({ name: 'editor', transaction: null }); haptic('light'); }}><span>记一笔</span></div>
                             <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center justify-center gap-1 ${activeTab==='home' ? 'text-white' : ''}`}><Layers size={22} strokeWidth={activeTab==='home'?2.5:2} /> 报表</button>
                         </div>
                     </nav>
 
-                    {isAddModalOpen && (
-                        <div className="fixed inset-0 z-[60] flex items-end justify-center">
-                             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsAddModalOpen(false)}></div>
-                             <div className="relative w-full bg-[#1C1C1E] rounded-t-[24px] p-6 pb-safe animate-slide-up border-t border-white/10">
-                                <h3 className="text-white text-lg font-bold mb-4">记一笔</h3>
-                                <div className="space-y-4">
-                                    <div className="bg-[#2C2C2E] p-4 rounded-2xl flex items-center"><span className="text-2xl mr-3 text-white/50">¥</span><input autoFocus type="number" className="bg-transparent text-3xl font-bold text-white w-full outline-none" placeholder="0.00" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} /></div>
-                                    <div className="grid grid-cols-4 gap-3">
-                                        {categoriesList.map(c => (
-                                            <button key={c} onClick={() => setForm({...form, category: c})} className={`py-2 rounded-xl text-xs ${form.category === c ? 'bg-white text-black' : 'bg-[#2C2C2E] text-gray-400'}`}>{c}</button>
-                                        ))}
-                                    </div>
-                                    <button onClick={() => handleQuickSave()} className="w-full py-4 bg-white text-black rounded-2xl font-bold mt-2 flex items-center justify-center gap-2">{loading && <Loader2 className="animate-spin" />} 确认</button>
-                                </div>
-                             </div>
-                        </div>
-                    )}
+                    {/* 🗑️ Removed the old white isAddModalOpen dialog */}
                 </div>
             );
         }
