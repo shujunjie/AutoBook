@@ -32,7 +32,6 @@
                             border: '#27272A',
                         }
                     },
-                    // 🌟 修复重点：将所有自定义动画显式定义在这里，避免使用 unstable 的任意值语法
                     animation: {
                         'slide-in-right': 'slideInRight 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards',
                         'fade-in': 'fadeIn 0.4s ease-out forwards',
@@ -41,7 +40,6 @@
                         'bounce-in': 'bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
                         'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
                         'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        // 新增动画类名
                         'shimmer': 'shimmer 2s infinite linear',
                         'scale-x': 'scaleX 0.8s ease-out forwards'
                     },
@@ -124,8 +122,7 @@
         .page-container {
             position: fixed; 
             top: 0; left: 0; width: 100%; height: 100%;
-            overflow-y: auto;
-            overflow-x: hidden; 
+            overflow: hidden; 
             background-color: #09090B;
             z-index: 50;
             -webkit-overflow-scrolling: touch;
@@ -149,7 +146,7 @@
             Utensils, Car, ShoppingBag, Gamepad2, Home as HomeIcon, 
             HeartPulse, Banknote, FileText, TrendingUp, Calendar, 
             LayoutGrid, ArrowLeft, Video, MessageCircle, Wallet, ChevronDown, Layers,
-            Users, Settings, Clock, Filter, Check, Trophy, Sparkles, Tag, PenLine, CalendarDays
+            Users, Settings, Clock, Filter, Check, Trophy, Sparkles, Tag, PenLine, CalendarDays, Camera
         } from 'lucide-react';
         import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isSameDay, format, parseISO, getDaysInMonth, getISOWeek, addMonths, subMonths, setMonth, setYear } from 'date-fns';
 
@@ -548,35 +545,119 @@
             );
         };
 
-        const TransactionGroup = ({ label, total, transactions, groupByDay, onViewEditor }) => {
-            const [isExpanded, setIsExpanded] = useState(true);
-            const daysMap = useMemo(() => {
-                if (!groupByDay) return null; const groups = {}; transactions.forEach(t => { const dateStr = getRawDateStr(t.date); if (!dateStr) return; if (!groups[dateStr]) groups[dateStr] = []; groups[dateStr].push(t); }); return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
-            }, [transactions, groupByDay]);
+        // 🌟 新增：时间维度选择弹窗 (按日, 按周, 按月, 按年)
+        const TimeDimensionSheet = ({ isOpen, onClose, selected, onSelect }) => {
+            if (!isOpen) return null;
+            const options = [
+                { label: '按日', value: 'day' },
+                { label: '按周', value: 'week' },
+                { label: '按月', value: 'month' },
+                { label: '按年', value: 'year' }
+            ];
             return (
-                <div className="mb-4 animate-slide-up-stagger" style={{ animationDelay: '0.1s' }}>
-                    <div className="flex justify-between items-center py-2.5 px-3 bg-[#1C1C1E] rounded-2xl transition-colors cursor-pointer mb-1" onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}>
-                        <div className="flex flex-col"><span className="text-[18px] font-bold text-white">{label}</span></div>
-                        <div className="flex items-center gap-3"><div className="text-right"><div className="text-[11px] text-art-textSub opacity-60 mb-0.5">总支出</div><div className="text-[14px] text-white font-medium">{formatMoney(total)}</div></div><div className={`transition-transform duration-200 text-art-textSub ${isExpanded ? 'rotate-180' : ''}`}><ChevronDown size={18} /></div></div>
+                <div className="fixed inset-0 z-[200] flex items-end justify-center">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
+                    <div className="relative w-full bg-[#1C1C1E] rounded-t-[24px] p-6 pb-safe animate-slide-up border-t border-white/10 shadow-2xl">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-[17px] font-bold text-white">选择时间维度</h3>
+                            <button onClick={onClose} className="p-1 text-art-textSub active:opacity-60 bg-art-cardLight rounded-full"><X size={18} /></button>
+                        </div>
+                        <div className="space-y-2">
+                            {options.map(opt => (
+                                <button 
+                                    key={opt.value}
+                                    onClick={() => { onSelect(opt.value); onClose(); }}
+                                    className={`w-full py-4 rounded-xl text-[15px] font-medium flex items-center justify-between px-4 transition-colors ${selected === opt.value ? 'bg-white text-black' : 'bg-[#2C2C2E] text-white'}`}
+                                >
+                                    {opt.label}
+                                    {selected === opt.value && <Check size={18} />}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                    {isExpanded && (<div className="px-1">{groupByDay && daysMap && daysMap.map(([dateStr, items]) => { const dObj = new Date(dateStr); const weekDay = ['周日','周一','周二','周三','周四','周五','周六'][dObj.getDay()]; return (<div key={dateStr} className="mb-6 animate-fade-in"><div className="flex justify-between items-end px-2 mb-2 text-art-textSub"><div className="text-[13px] font-medium">{format(dObj, 'MM月dd日')} {weekDay}</div></div><div className="space-y-0">{items.map(t => (<TransactionItem key={t.id} t={t} onClick={() => onViewEditor(t)} />))}</div></div>); })} {!groupByDay && (<div className="space-y-0 mt-2 animate-fade-in">{transactions.map(t => (<TransactionItem key={t.id} t={t} onClick={() => onViewEditor(t)} />))}</div>)}</div>)}
                 </div>
             );
         };
 
-        // 🌟 修改 TransactionItem：改为通栏样式，增加底部分割线，去掉圆角
+        const TransactionGroup = ({ label, total, transactions, groupByDay, groupType, onViewEditor }) => {
+            const [isExpanded, setIsExpanded] = useState(true);
+            const daysMap = useMemo(() => {
+                if (groupType === 'category') return null; // 分类模式下不需要再按日期分组
+                if (!groupByDay) return null; 
+                const groups = {}; 
+                transactions.forEach(t => { 
+                    const dateStr = getRawDateStr(t.date); 
+                    if (!dateStr) return; 
+                    if (!groups[dateStr]) groups[dateStr] = []; 
+                    groups[dateStr].push(t); 
+                }); 
+                return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
+            }, [transactions, groupByDay, groupType]);
+            
+            // 计算分类模式下的图标
+            const categoryIcon = groupType === 'category' ? getCategoryIcon(label) : null;
+            const categoryColor = groupType === 'category' ? getCategoryColor(label) : null;
+
+            return (
+                <div className="animate-slide-up-stagger" style={{ animationDelay: '0.1s' }}>
+                    <div className="sticky top-0 z-20 flex justify-between items-center py-3 px-5 bg-[#121212]/95 backdrop-blur-xl border-b border-white/5 cursor-pointer" onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}>
+                        <div className="flex items-center gap-3">
+                            {groupType === 'category' && (
+                                <div className={`w-7 h-7 rounded-full flex items-center justify-center ${categoryColor?.bg} ${categoryColor?.text}`}>
+                                    {React.cloneElement(categoryIcon, { size: 14 })}
+                                </div>
+                            )}
+                            <div className="flex flex-col"><span className="text-[16px] font-bold text-white">{label}</span></div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="text-right">
+                                <div className="text-[11px] text-art-textSub opacity-60 mb-0.5">总支出</div>
+                                <div className="text-[14px] text-white font-medium">{formatMoney(total)}</div>
+                            </div>
+                            <div className={`transition-transform duration-200 text-art-textSub ${isExpanded ? 'rotate-180' : ''}`}><ChevronDown size={18} /></div>
+                        </div>
+                    </div>
+                    
+                    {isExpanded && (
+                        <div className="bg-[#09090B]">
+                            {/* 按时间分组且需要再细分日期的情况 (daysMap存在) */}
+                            {daysMap && daysMap.map(([dateStr, items]) => { 
+                                const dObj = new Date(dateStr); 
+                                const weekDay = ['周日','周一','周二','周三','周四','周五','周六'][dObj.getDay()]; 
+                                return (
+                                    <div key={dateStr}>
+                                        <div className="flex justify-between items-center px-5 py-1.5 bg-[#27272A] border-b border-white/5">
+                                            <div className="text-[12px] text-art-textSub font-medium">{format(dObj, 'MM月dd日')} {weekDay}</div>
+                                        </div>
+                                        <div className="bg-[#1C1C1E]">
+                                            {items.map(t => (<TransactionItem key={t.id} t={t} onClick={() => onViewEditor(t)} />))}
+                                        </div>
+                                    </div>
+                                ); 
+                            })}
+                            
+                            {/* 按分类分组 或 按时间分组但不需要细分日期 (daysMap不存在) */}
+                            {!daysMap && (
+                                <div className="bg-[#1C1C1E] animate-fade-in">
+                                    {transactions.map(t => (<TransactionItem key={t.id} t={t} onClick={() => onViewEditor(t)} />))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
         const TransactionItem = ({ t, onClick }) => (
             <div onClick={onClick} className="flex items-center justify-between py-3.5 px-5 active:bg-white/5 bg-[#1C1C1E] border-b border-white/5 last:border-b-0 transition-colors cursor-pointer">
                 <div className="flex items-center gap-4 overflow-hidden"><div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${getCategoryColor(t.category).bg} ${getCategoryColor(t.category).text}`}>{React.cloneElement(getCategoryIcon(t.category), { size: 18 })}</div><div className="flex flex-col min-w-0"><div className="text-[15px] text-white font-bold truncate mb-1">{t.merchant || t.category}</div><div className="text-[12px] text-[#666] font-normal truncate flex items-center gap-1.5"><span>{getRawTimeStr(t.date)}</span><span>·</span><span>{t.note || t.category}</span></div></div></div><div className="text-[17px] text-art-blue font-bold shrink-0 ml-3 font-mono tracking-tight">{formatMoney(t.amount)}</div>
             </div>
         );
 
-        // 🌟 修改 MonthGroup：去掉外边距，头部改为吸顶通栏样式
         const MonthGroup = ({ year, month, totalExpense, days, onViewEditor }) => {
             const [isExpanded, setIsExpanded] = useState(true);
             return (
                 <div className="animate-slide-up-stagger" style={{ animationDelay: '0.1s' }}>
-                    {/* 月份头部：吸顶 + 磨砂背景 + 通栏 */}
                     <div className="sticky top-0 z-20 flex justify-between items-center py-3 px-5 bg-[#121212]/95 backdrop-blur-xl border-b border-white/5 cursor-pointer" onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}>
                         <div className="flex items-baseline gap-1.5"><span className="text-[20px] font-bold text-white">{month}月</span><span className="text-[13px] text-art-textSub">{year}</span></div>
                         <div className="flex items-center gap-3"><div className="text-right"><div className="text-[11px] text-art-textSub opacity-60 mb-0.5">总支出</div><div className="text-[14px] text-white font-medium">{formatMoney(totalExpense)}</div></div><div className={`transition-transform duration-200 text-art-textSub ${isExpanded ? 'rotate-180' : ''}`}><ChevronDown size={18} /></div></div>
@@ -589,7 +670,6 @@
                                 const isToday = isSameDay(dObj, new Date());
                                 return (
                                     <div key={dateStr}>
-                                        {/* 日期小标题：深色条带 */}
                                         <div className="flex justify-between items-center px-5 py-1.5 bg-[#27272A] border-b border-white/5">
                                             <div className={`text-[12px] font-medium ${isToday ? 'text-art-accent' : 'text-art-textSub'}`}>{format(dObj, 'MM月dd日')} {weekDay}</div>
                                         </div>
@@ -605,12 +685,22 @@
             );
         };
 
-        const PeriodPage = ({ title, type, total, allTransactions, onClose, initialCategory, onViewEditor }) => {
+        const PeriodPage = ({ title, type, total, allTransactions, onClose, initialCategory, onViewEditor, headerImage, onUpload }) => {
             const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
             const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+            const [isTimeDimensionSheetOpen, setIsTimeDimensionSheetOpen] = useState(false); 
             const [isLoading, setIsLoading] = useState(true);
+            const [grouping, setGrouping] = useState('date'); 
             
-            // 🆕 Hook for Swipe Back
+            // 🌟 修复：默认时间维度逻辑
+            const [timeDimension, setTimeDimension] = useState(() => {
+                if (type === 'today') return 'day';
+                if (type === 'week') return 'day';   // 本周 -> 按日展示
+                if (type === 'month') return 'day';  // 本月 -> 按日展示
+                if (type === 'year') return 'month'; // 本年 -> 按月展示
+                return 'day'; 
+            });
+
             const swipeBack = useSwipeBack(onClose);
 
             useEffect(() => { const timer = setTimeout(() => setIsLoading(false), 500); return () => clearTimeout(timer); }, []);
@@ -619,47 +709,159 @@
                 const now = new Date();
                 let startDate = '', endDate = '';
                 let cat = initialCategory || 'all'; 
+                // 筛选范围始终基于 type，不受 timeDimension 影响
                 if (type === 'today') { startDate = endDate = format(now, 'yyyy-MM-dd'); } 
                 else if (type === 'week') { startDate = format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'); endDate = format(endOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'); } 
                 else if (type === 'year') { startDate = format(startOfYear(now), 'yyyy-MM-dd'); endDate = format(endOfYear(now), 'yyyy-MM-dd'); } 
                 else if (type === 'month') { startDate = format(startOfMonth(now), 'yyyy-MM-dd'); endDate = format(endOfMonth(now), 'yyyy-MM-dd'); }
                 return { startDate, endDate, category: cat, minAmount: '', maxAmount: '', keyword: '' };
             };
-            const [activeFilters, setActiveFilters] = useState(getInitialFilters());
+            
+            // 初始化 activeFilters，只在 mount 时执行一次
+            const [activeFilters, setActiveFilters] = useState(getInitialFilters);
+
             const handleSheetAction = (action) => { if (action === 'viewAll') { setActiveFilters({ startDate: '', endDate: '', category: 'all', minAmount: '', maxAmount: '', keyword: '' }); haptic(); } else if (action === 'openSidebar') { setIsSidebarOpen(true); haptic(); } };
 
+            // 切换时间维度：只改变分组方式 (timeDimension)，不重置筛选范围
+            const handleDimensionSelect = (val) => {
+                setTimeDimension(val);
+                setGrouping('date');
+                haptic();
+            };
+
+            const handleTimeClick = () => { 
+                haptic('light'); 
+                if (grouping === 'date') { 
+                    setIsTimeDimensionSheetOpen(true); 
+                } else { 
+                    setGrouping('date'); 
+                } 
+            };
+
             const list = useMemo(() => { return allTransactions.filter(t => { const rawDate = getRawDateStr(t.date); if (!rawDate) return false; const amount = Math.abs(Number(t.amount || 0)); if (activeFilters.startDate && rawDate < activeFilters.startDate) return false; if (activeFilters.endDate && rawDate > activeFilters.endDate) return false; if (activeFilters.category !== 'all' && t.category !== activeFilters.category) return false; if (activeFilters.minAmount && amount < Number(activeFilters.minAmount)) return false; if (activeFilters.maxAmount && amount > Number(activeFilters.maxAmount)) return false; if (activeFilters.keyword) { const note = (t.note || '').toLowerCase(); const merchant = (t.merchant || '').toLowerCase(); const kw = activeFilters.keyword.toLowerCase(); if (!note.includes(kw) && !merchant.includes(kw)) return false; } return true; }).sort((a,b) => b.date.localeCompare(a.date)); }, [activeFilters, allTransactions]);
-            const groupedData = useMemo(() => { const groups = {}; list.forEach(t => { const dateStr = getRawDateStr(t.date); if (!dateStr) return; const dObj = new Date(dateStr); let key = ""; let label = ""; if (type === 'today') { key = dateStr; label = format(dObj, 'MM月dd日'); } else if (type === 'week') { const year = dObj.getFullYear(); const weekNum = getISOWeek(dObj); key = `${year}-W${weekNum}`; label = `第${weekNum}周`; } else if (type === 'year') { const year = dObj.getFullYear(); key = `${year}`; label = `${year}年`; } else { const y = dObj.getFullYear(); const m = dObj.getMonth() + 1; key = `${y}-${m}`; label = `${m}月`; } if (!groups[key]) { groups[key] = { label, total: 0, items: [] }; } groups[key].total += Math.abs(Number(t.amount || 0)); groups[key].items.push(t); }); return Object.entries(groups).sort((a,b) => b[0].localeCompare(a[0])).map(([k,v]) => v); }, [list, type]);
+            
+            const groupedData = useMemo(() => { 
+                const groups = {}; 
+                
+                if (grouping === 'category') {
+                    list.forEach(t => { const key = t.category || '其他'; if (!groups[key]) groups[key] = { label: key, total: 0, items: [] }; groups[key].total += Math.abs(Number(t.amount || 0)); groups[key].items.push(t); });
+                    return Object.values(groups).sort((a, b) => b.total - a.total);
+                }
+
+                // 按时间维度分组 (day, week, month, year)
+                list.forEach(t => { 
+                    const dateStr = getRawDateStr(t.date); if (!dateStr) return; const dObj = new Date(dateStr); let key = ""; let label = ""; 
+                    
+                    if (timeDimension === 'day') { key = dateStr; label = format(dObj, 'MM月dd日'); } 
+                    else if (timeDimension === 'week') { const year = dObj.getFullYear(); const weekNum = getISOWeek(dObj); key = `${year}-W${weekNum}`; label = `第${weekNum}周`; } 
+                    else if (timeDimension === 'year') { const year = dObj.getFullYear(); key = `${year}`; label = `${year}年`; } 
+                    else if (timeDimension === 'month') { const y = dObj.getFullYear(); const m = dObj.getMonth() + 1; key = `${y}-${m}`; label = `${m}月`; } 
+                    
+                    if (!groups[key]) { groups[key] = { label, total: 0, items: [] }; } 
+                    groups[key].total += Math.abs(Number(t.amount || 0)); groups[key].items.push(t); 
+                }); 
+                return Object.entries(groups).sort((a,b) => b[0].localeCompare(a[0])).map(([k,v]) => v); 
+            }, [list, timeDimension, grouping]);
+
             const currentTotal = useMemo(() => list.reduce((sum, t) => sum + Math.abs(Number(t.amount || 0)), 0), [list]);
-            const displayTitle = useMemo(() => { if (!activeFilters.startDate && !activeFilters.endDate) return "全部流水"; if (activeFilters.category !== 'all') return `${activeFilters.category}支出`; if (activeFilters.startDate === activeFilters.endDate) return activeFilters.startDate; return "筛选结果"; }, [activeFilters]);
-            const finalTitle = (activeFilters.category === 'all' && type !== 'month') ? title : displayTitle;
+            
+            const displayTitle = useMemo(() => { 
+                if (grouping === 'category') return `${activeFilters.category === 'all' ? '全部分类' : activeFilters.category}支出`;
+                // 显示当前筛选的时间范围提示，而非分组方式
+                if (type === 'today') return "今天";
+                if (type === 'week') return "本周";
+                if (type === 'month') return "本月";
+                if (type === 'year') return "本年";
+                return "筛选结果";
+            }, [activeFilters, type, grouping]);
+            
+            const finalTitle = title || displayTitle;
+
+            const getTimeLabel = () => { 
+                switch(timeDimension) { 
+                    case 'year': return '按年'; 
+                    case 'month': return '按月'; 
+                    case 'week': return '按周'; 
+                    default: return '按日'; 
+                } 
+            };
 
             return (
                 <div className="page-container page-enter-active pb-safe flex flex-col z-[100] bg-[#09090B] no-scrollbar shadow-2xl" style={swipeBack.style} {...swipeBack.bind}>
-                    <div className="relative h-[200px] w-full overflow-hidden shrink-0 transition-all duration-700 ease-out transform" style={{ opacity: isLoading ? 0.9 : 1, transform: isLoading ? 'scale(1.02)' : 'scale(1)' }}>
-                        <img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-[#09090B]"></div>
-                        <div className="absolute top-0 left-0 right-0 pt-safe px-4 h-[60px] flex items-center justify-between z-20">
-                            {/* 使用 triggerClose 触发动画返回 */}
-                            <button onClick={swipeBack.triggerClose} className="p-2 -ml-2 text-white flex items-center gap-1 active:opacity-60 transition-opacity">
-                                <ArrowLeft size={24} /> <span className="text-[17px] font-medium tracking-wide truncate max-w-[200px] text-white/90">{finalTitle}</span>
-                            </button>
-                            <button onClick={() => {}} className="p-2 text-white/90 active:opacity-60"><Plus size={26} /></button>
-                        </div>
-                        <div className="absolute bottom-10 left-6 z-20 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                            <div className="text-[12px] text-white/70 font-medium mb-1 tracking-widest uppercase">总支出</div>
-                            <div className="text-[48px] font-bold text-white font-mono tracking-tighter leading-none -ml-1">-{formatMoney(currentTotal)}</div>
-                        </div>
-                    </div>
-                    <div className="flex-1 px-4 -mt-6 relative z-30">
-                        <div className="bg-[#121212] rounded-t-[32px] min-h-full border-t border-[#2C2C2E] p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl">
-                            <div className="flex justify-between items-center mb-6 px-1 pt-1">
-                                <span className="text-[13px] text-art-textSub font-medium tracking-wide">{list.length === allTransactions.length ? "全部明细" : "筛选结果"}</span>
-                                <button onClick={() => { setIsFilterSheetOpen(true); haptic(); }} className="text-[13px] text-art-accent flex items-center gap-1 active:opacity-60 font-medium bg-art-accent/10 px-3 py-1.5 rounded-full">{list.length === allTransactions.length ? "筛选" : "查看全部"} <ChevronRight size={12}/></button>
+                    {/* 内容滚动层 */}
+                    <div className="absolute inset-0 overflow-y-auto no-scrollbar pb-32"> 
+                        <div className="relative h-[200px] w-full overflow-hidden shrink-0 transition-all duration-700 ease-out transform" style={{ opacity: isLoading ? 0.9 : 1, transform: isLoading ? 'scale(1.02)' : 'scale(1)' }}>
+                            <img src={headerImage} className="absolute inset-0 w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-[#09090B]"></div>
+                            
+                            {/* 上传按钮 */}
+                            <label className="absolute bottom-4 right-4 z-30 p-2 bg-black/30 backdrop-blur-md rounded-full text-white/70 hover:text-white transition-colors cursor-pointer active:scale-90">
+                                <Camera size={18} />
+                                <input type="file" accept="image/*" className="hidden" onChange={onUpload} />
+                            </label>
+
+                            <div className="absolute top-0 left-0 right-0 pt-safe px-4 h-[60px] flex items-center justify-between z-20">
+                                <button onClick={swipeBack.triggerClose} className="p-2 -ml-2 text-white flex items-center gap-1 active:opacity-60 transition-opacity">
+                                    <ArrowLeft size={24} /> <span className="text-[17px] font-medium tracking-wide truncate max-w-[200px] text-white/90">{finalTitle}</span>
+                                </button>
+                                <button onClick={() => {}} className="p-2 text-white/90 active:opacity-60"><Plus size={26} /></button>
                             </div>
-                            {isLoading ? <Skeleton /> : (<div className="space-y-6 pb-10">{groupedData.length === 0 ? (<div className="text-center py-20 text-art-textSub opacity-50 flex flex-col items-center animate-fade-in"><div className="text-4xl mb-3">🍃</div><div className="text-[15px]">暂无记录</div></div>) : (groupedData.map((group, idx) => (<TransactionGroup key={idx} label={group.label} total={group.total} transactions={group.items} groupByDay={type !== 'today'} onViewEditor={onViewEditor} />)))}</div>)}
+                            <div className="absolute bottom-10 left-6 z-20 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                                <div className="text-[12px] text-white/70 font-medium mb-1 tracking-widest uppercase">总支出</div>
+                                <div className="text-[48px] font-bold text-white font-mono tracking-tighter leading-none -ml-1">-{formatMoney(currentTotal)}</div>
+                            </div>
+                        </div>
+                        
+                        <div className="flex-1 relative z-30 -mt-6">
+                            <div className="bg-[#121212] rounded-t-[32px] min-h-full border-t border-[#2C2C2E] shadow-[0_-10px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+                                <div className="flex justify-between items-center mb-4 pt-5 px-6">
+                                    <span className="text-[13px] text-art-textSub font-medium tracking-wide">{list.length === allTransactions.length ? "全部明细" : "筛选结果"}</span>
+                                    <button onClick={() => { setIsFilterSheetOpen(true); haptic(); }} className="text-[13px] text-art-accent flex items-center gap-1 active:opacity-60 font-medium bg-art-accent/10 px-3 py-1.5 rounded-full">{list.length === allTransactions.length ? "筛选" : "查看全部"} <ChevronRight size={12}/></button>
+                                </div>
+                                {isLoading ? <div className="px-4"><Skeleton /></div> : (
+                                    <div className="pb-8">
+                                        {groupedData.length === 0 ? (
+                                            <div className="text-center py-20 text-art-textSub opacity-50 flex flex-col items-center animate-fade-in"><div className="text-4xl mb-3">🍃</div><div className="text-[15px]">暂无记录</div></div>
+                                        ) : (
+                                            groupedData.map((group, idx) => (
+                                                <TransactionGroup 
+                                                    key={idx} 
+                                                    label={group.label} 
+                                                    total={group.total} 
+                                                    transactions={group.items} 
+                                                    // 只有在 timeDimension 为 'day' 时，才使用 groupByDay (展示日期明细)
+                                                    groupByDay={timeDimension !== 'day'} 
+                                                    groupType={grouping}
+                                                    onViewEditor={onViewEditor} 
+                                                />
+                                            ))
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
+
+                    {/* 🌟 2. 底部固定切换栏 (全面屏通栏设计) */}
+                    <div className="absolute bottom-0 left-0 right-0 z-[60] bg-[#1C1C1E] border-t border-white/5 pb-safe">
+                        <div className="flex h-[50px]">
+                            <button 
+                                onClick={handleTimeClick}
+                                className={`flex-1 flex items-center justify-center text-[15px] font-medium transition-colors duration-200 gap-1 border-r border-white/5 ${grouping === 'date' ? 'text-white bg-white/5' : 'text-art-textSub'}`}
+                            >
+                                {grouping === 'date' ? getTimeLabel() : '时间'}
+                                {grouping === 'date' && <ChevronDown size={14} className="ml-1 opacity-50"/>} 
+                            </button>
+                            <button 
+                                onClick={() => { setGrouping('category'); haptic('light'); }}
+                                className={`flex-1 flex items-center justify-center text-[15px] font-medium transition-colors duration-200 ${grouping === 'category' ? 'text-white bg-white/5' : 'text-art-textSub'}`}
+                            >
+                                分类
+                            </button>
+                        </div>
+                    </div>
+
+                    <TimeDimensionSheet isOpen={isTimeDimensionSheetOpen} onClose={() => setIsTimeDimensionSheetOpen(false)} selected={timeDimension} onSelect={handleDimensionSelect} />
                     <FilterSheet isOpen={isFilterSheetOpen} onClose={() => setIsFilterSheetOpen(false)} dateRange={activeFilters.startDate ? `${activeFilters.startDate} 至 ${activeFilters.endDate || '今'}` : '全部时间'} onModify={handleSheetAction} />
                     <FilterSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} currentFilters={activeFilters} onApply={setActiveFilters} />
                 </div>
@@ -672,8 +874,6 @@
             const [isDateSheetOpen, setIsDateSheetOpen] = useState(false);
             const [isTimeSheetOpen, setIsTimeSheetOpen] = useState(false);
             const [shakeError, setShakeError] = useState(false); 
-            
-            // 🆕 Hook for Swipe Back
             const swipeBack = useSwipeBack(onClose);
 
             useEffect(() => { const timer = setTimeout(() => setIsLoading(false), 300); return () => clearTimeout(timer); }, []);
@@ -693,7 +893,6 @@
                         <div className={`absolute inset-0 bg-gradient-to-b ${currentCategoryColor.gradient} via-black/80 to-[#09090B] opacity-30`}></div>
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 mix-blend-overlay"></div>
                         <div className="absolute top-0 left-0 right-0 pt-safe px-4 h-[60px] flex items-center justify-between z-20">
-                            {/* 使用 triggerClose 触发动画返回 */}
                             <button onClick={swipeBack.triggerClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 backdrop-blur-md active:bg-white/10 transition-colors text-white"><ArrowLeft size={20} /></button>
                             <button onClick={handleSave} className="px-4 h-9 rounded-full bg-white text-black font-bold text-[13px] active:scale-95 transition-transform flex items-center gap-2">{loading && <Loader2 size={12} className="animate-spin" />}{transaction ? '保存' : '完成'}</button>
                         </div>
@@ -717,54 +916,27 @@
 
         const SplashScreen = ({ onFinish }) => {
             const [isFading, setIsFading] = useState(false);
-
-            useEffect(() => {
-                const timer1 = setTimeout(() => setIsFading(true), 2800);
-                const timer2 = setTimeout(onFinish, 3300);
-                return () => { clearTimeout(timer1); clearTimeout(timer2); };
-            }, [onFinish]);
-
+            useEffect(() => { const timer1 = setTimeout(() => setIsFading(true), 2800); const timer2 = setTimeout(onFinish, 3300); return () => { clearTimeout(timer1); clearTimeout(timer2); }; }, [onFinish]);
             return (
                 <div className={`fixed inset-0 z-[9999] bg-[#000000] flex flex-col items-center justify-center transition-all duration-700 ease-out overflow-hidden ${isFading ? 'opacity-0 scale-110 blur-sm' : 'opacity-100 scale-100'}`}>
-                    
-                    {/* 🌟 1. 氛围背景光 - 使用绝对定位的模糊圆球营造深邃感 */}
                     <div className="absolute top-[-20%] left-[-20%] w-[80vw] h-[80vw] bg-blue-600/20 rounded-full blur-[120px] animate-pulse-slow"></div>
                     <div className="absolute bottom-[-20%] right-[-20%] w-[80vw] h-[80vw] bg-art-cyan/10 rounded-full blur-[120px] animate-pulse-slow" style={{animationDelay: '1.5s'}}></div>
-
-                    {/* 🌟 2. 主要内容区 */}
                     <div className="relative z-10 flex flex-col items-center">
-                        
-                        {/* Logo 容器：磨砂玻璃 + 内发光 */}
                         <div className="relative mb-10 animate-bounce-in">
                             <div className="absolute inset-0 bg-gradient-to-tr from-art-cyan to-blue-600 rounded-[36px] blur-2xl opacity-40"></div>
                             <div className="w-32 h-32 bg-[#121212]/40 backdrop-blur-2xl rounded-[36px] border border-white/10 flex items-center justify-center shadow-2xl relative z-10 ring-1 ring-white/5 group">
                                 <Wallet size={56} className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)] transition-transform duration-700 group-hover:scale-110" strokeWidth={1.2} />
-                                {/* 闪光特效 */}
                                 <div className="absolute inset-0 rounded-[36px] bg-gradient-to-tr from-white/10 to-transparent opacity-50"></div>
                             </div>
                         </div>
-
-                        {/* 文字排版 */}
                         <div className="text-center space-y-4">
-                            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-white/50 tracking-wider animate-slide-up" style={{animationDelay: '0.2s'}}>
-                                AI 随手记
-                            </h1>
-                            
-                            {/* 装饰线条 */}
+                            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-white/50 tracking-wider animate-slide-up" style={{animationDelay: '0.2s'}}>AI 随手记</h1>
                             <div className="h-[1px] w-12 bg-gradient-to-r from-transparent via-white/30 to-transparent mx-auto animate-scale-x" style={{animationDelay: '0.4s'}}></div>
-                            
-                            <p className="text-art-textSub text-[10px] tracking-[0.4em] uppercase font-medium animate-slide-up pl-1" style={{animationDelay: '0.5s'}}>
-                                Intelligent Finance
-                            </p>
+                            <p className="text-art-textSub text-[10px] tracking-[0.4em] uppercase font-medium animate-slide-up pl-1" style={{animationDelay: '0.5s'}}>Intelligent Finance</p>
                         </div>
                     </div>
-                    
-                    {/* 🌟 3. 底部高级加载条 */}
                     <div className="absolute bottom-16 flex flex-col items-center gap-4 animate-fade-in" style={{animationDelay: '0.8s'}}>
-                        {/* 极细流光进度条 */}
-                        <div className="w-32 h-[2px] bg-white/5 rounded-full overflow-hidden relative">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-art-cyan to-transparent w-1/2 h-full rounded-full animate-shimmer"></div>
-                        </div>
+                        <div className="w-32 h-[2px] bg-white/5 rounded-full overflow-hidden relative"><div className="absolute inset-0 bg-gradient-to-r from-transparent via-art-cyan to-transparent w-1/2 h-full rounded-full animate-shimmer"></div></div>
                         <p className="text-[9px] text-white/20 font-mono tracking-widest">VERSION 1.3.0</p>
                     </div>
                 </div>
@@ -784,6 +956,7 @@
             const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, id: null });
             const [pullY, setPullY] = useState(0);
             const [isRefreshing, setIsRefreshing] = useState(false);
+            const [headerImage, setHeaderImage] = useState(localStorage.getItem('custom_header_image') || "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop");
             const startY = useRef(0);
             const scrollContainerRef = useRef(null);
 
@@ -797,6 +970,42 @@
             const performDelete = async (id) => { await supabase.from('transactions').delete().eq('id', id); showToast("已删除"); setTransactions(p => p.filter(t => t.id !== id)); if (view.name === 'editor' && view.transaction?.id === id) { setView({ name: 'main' }); } };
             const executeDelete = async () => { if (!confirmDialog.id) return; await performDelete(confirmDialog.id); setConfirmDialog({ isOpen: false, id: null }); };
             
+            const handleImageUpload = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const uploadingToast = setTimeout(() => showToast("正在上传...", 'success'), 100);
+
+                try {
+                    // 1. Delete old image if it's a custom one (check if URL contains supabase)
+                    const oldImagePath = localStorage.getItem('custom_header_image_path');
+                    if (oldImagePath) {
+                        await supabase.storage.from('memo_images').remove([oldImagePath]);
+                    }
+
+                    // 2. Upload new
+                    const fileName = `header_${Date.now()}_${file.name}`;
+                    const { data, error } = await supabase.storage.from('memo_images').upload(fileName, file);
+                    
+                    if (error) throw error;
+
+                    // 3. Get URL
+                    const { data: { publicUrl } } = supabase.storage.from('memo_images').getPublicUrl(fileName);
+                    
+                    // 4. Update State & Storage
+                    setHeaderImage(publicUrl);
+                    localStorage.setItem('custom_header_image', publicUrl);
+                    localStorage.setItem('custom_header_image_path', fileName);
+                    
+                    showToast("封面更新成功");
+                } catch (error) {
+                    console.error('Upload failed:', error);
+                    showToast("上传失败", 'error');
+                } finally {
+                    clearTimeout(uploadingToast);
+                }
+            };
+
             const stats = useMemo(() => { const now = new Date(); const todayStr = format(now, 'yyyy-MM-dd'); const startOfWeekStr = format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'); const endOfWeekStr = format(endOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'); const currentMonthStr = format(now, 'yyyy-MM'); const currentYearStr = format(now, 'yyyy'); const sum = (list) => list.reduce((acc, t) => acc + Math.abs(Number(t.amount || 0)), 0); const todayTrans = transactions.filter(t => getRawDateStr(t.date) === todayStr); const weekTrans = transactions.filter(t => { const d = getRawDateStr(t.date); return d >= startOfWeekStr && d <= endOfWeekStr; }); const monthTrans = transactions.filter(t => getRawDateStr(t.date).startsWith(currentMonthStr)); const yearTrans = transactions.filter(t => getRawDateStr(t.date).startsWith(currentYearStr)); return { monthTotal: sum(monthTrans), todayTotal: sum(todayTrans), weekTotal: sum(weekTrans), yearTotal: sum(yearTrans) }; }, [transactions]);
             const groupedByMonth = useMemo(() => { const groups = {}; transactions.forEach(t => { const dateStr = getRawDateStr(t.date); if (!dateStr) return; const [y, m, d] = dateStr.split('-'); const monthKey = `${y}-${m}`; if (!groups[monthKey]) { groups[monthKey] = { year: y, month: m, totalExpense: 0, days: {} }; } groups[monthKey].totalExpense += Math.abs(Number(t.amount || 0)); if (!groups[monthKey].days[dateStr]) { groups[monthKey].days[dateStr] = []; } groups[monthKey].days[dateStr].push(t); }); return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0])).map(([key, data]) => ({ key, ...data, daysSorted: Object.entries(data.days).sort((a, b) => b[0].localeCompare(a[0])) })); }, [transactions]);
             const handleCategoryClick = (category) => { setView({ name: 'period', title: `本月·${category}`, type: 'month', total: 0, initialCategory: category }); };
@@ -823,45 +1032,58 @@
                                 <div className="animate-fade-in">
                                     <div className="pt-safe px-5 h-[20px] mb-2"></div>
                                     <div className="mx-4 h-[140px] rounded-[32px] relative overflow-hidden shadow-2xl mb-6 group">
-                                        <img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" />
+                                        <img src={headerImage} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" />
                                         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/80"></div>
+                                        
+                                        <label className="absolute bottom-4 right-4 z-30 p-2 bg-black/30 backdrop-blur-md rounded-full text-white/70 hover:text-white transition-colors cursor-pointer active:scale-90">
+                                            <Camera size={16} />
+                                            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                                        </label>
+
                                         <div className="absolute top-6 left-6 z-10">
                                             <div className="text-[14px] text-white/70 font-medium mb-1">本月收支统计</div>
                                             <div className="text-[12px] text-white/50">总支出</div>
                                             <div className="text-[42px] font-bold text-white font-mono tracking-tighter leading-none -ml-1">{formatMoney(stats.monthTotal)}</div>
                                         </div>
                                     </div>
+
                                     <div className="mx-4 space-y-3 mb-6">
                                         <div onClick={() => setView({ name: 'period', title: `今天 ${format(new Date(), 'M月d日')}`, type: 'today', total: stats.todayTotal })} className="bg-art-card p-4 rounded-[20px] flex items-center justify-between border border-white/5 active:bg-white/10 transition-colors cursor-pointer">
                                             <div className="flex items-center gap-3"><div className="w-1.5 h-8 bg-green-500 rounded-full shadow-[0_0_10px_rgba(74,222,128,0.5)]"></div><div><div className="text-[15px] font-bold text-white">今天</div><div className="text-[12px] text-art-textSub">{new Date().getMonth()+1}月{new Date().getDate()}日</div></div></div>
                                             <div className="text-right"><div className="text-[12px] text-art-textSub">总支出</div><div className="text-[15px] font-mono text-art-accent">{formatMoney(stats.todayTotal)}</div></div>
                                         </div>
+
                                         <div onClick={() => { const start = startOfWeek(new Date(), { weekStartsOn: 1 }); const end = endOfWeek(new Date(), { weekStartsOn: 1 }); setView({ name: 'period', title: `本周 ${format(start, 'M.d')}-${format(end, 'M.d')}`, type: 'week', total: stats.weekTotal }); }} className="bg-art-card p-4 rounded-[20px] flex items-center justify-between border border-white/5 active:bg-white/10 transition-colors cursor-pointer">
                                             <div className="flex items-center gap-3"><div className="w-1.5 h-8 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div><div><div className="text-[15px] font-bold text-white">本周</div><div className="text-[12px] text-art-textSub">{format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'MM月dd日')} - {format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'MM月dd日')}</div></div></div>
                                             <div className="text-right"><div className="text-[12px] text-art-textSub">总支出</div><div className="text-[15px] font-mono text-art-accent">{formatMoney(stats.weekTotal)}</div></div>
                                         </div>
+
                                         <div onClick={() => setView({ name: 'period', title: `本年 ${new Date().getFullYear()}`, type: 'year', total: stats.yearTotal })} className="bg-art-card p-4 rounded-[20px] flex items-center justify-between border border-white/5 active:bg-white/10 transition-colors cursor-pointer">
                                             <div className="flex items-center gap-3"><div className="w-1.5 h-8 bg-yellow-500 rounded-full shadow-[0_0_10px_rgba(234,179,8,0.5)]"></div><div><div className="text-[15px] font-bold text-white">本年</div><div className="text-[12px] text-art-textSub">{new Date().getFullYear()}年</div></div></div>
                                             <div className="text-right"><div className="text-[12px] text-art-textSub">总支出</div><div className="text-[15px] font-mono text-art-accent">{formatMoney(stats.yearTotal)}</div></div>
                                         </div>
                                     </div>
+
                                     <MonthlyStats transactions={transactions} currentDate={currentDate} onCategoryClick={handleCategoryClick} />
                                 </div>
                             )}
                             {activeTab === 'flow' && (
                                 <div className="pb-24 animate-fade-in">
-                                    {/* 🌟 1. 修改头部容器：去掉 mb-6，保持无间距 */}
-                                    <div className="relative h-[140px] w-full overflow-hidden shrink-0">
-                                        <img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover" />
+                                    <div className="relative h-[140px] w-full overflow-hidden shrink-0 mb-6">
+                                        <img src={headerImage} className="absolute inset-0 w-full h-full object-cover" />
                                         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#000000]"></div>
+                                        
+                                        <label className="absolute bottom-4 right-4 z-30 p-2 bg-black/30 backdrop-blur-md rounded-full text-white/70 hover:text-white transition-colors cursor-pointer active:scale-90">
+                                            <Camera size={16} />
+                                            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                                        </label>
+
                                         <div className="absolute top-0 left-0 right-0 h-full flex flex-col justify-end p-6 pb-4 z-10 pt-safe">
                                             <div className="text-[18px] font-bold text-white mb-3">账单流水</div>
                                             <div className="text-[12px] text-white/60 mb-0.5">总支出</div>
                                             <div className="text-[40px] font-bold text-white font-mono tracking-tighter leading-none -ml-1">-{formatMoney(transactions.reduce((acc, t) => acc + Math.abs(Number(t.amount)), 0))}</div>
                                         </div>
                                     </div>
-                                    
-                                    {/* 🌟 2. 修改列表容器：去掉 px-4 和 space-y，实现通栏布局 */}
                                     <div className="w-full">
                                         {groupedByMonth.map((monthGroup) => (<MonthGroup key={monthGroup.key} year={monthGroup.year} month={monthGroup.month} totalExpense={monthGroup.totalExpense} days={monthGroup.daysSorted} onViewEditor={(t) => setView({ name: 'editor', transaction: t })} />))}
                                         {transactions.length === 0 && (<div className="flex flex-col items-center justify-center pt-20 opacity-40"><div className="text-4xl mb-3">🍃</div><p className="text-art-textSub">暂无流水记录</p></div>)}
@@ -886,7 +1108,17 @@
                         <EditorPage transaction={view.transaction} onClose={()=>setView({name:'main'})} onSave={handleEditorSave} onDelete={performDelete} />
                     )}
                     {view.name === 'period' && (
-                        <PeriodPage title={view.title} type={view.type} total={view.total} allTransactions={transactions} onClose={()=>setView({name:'main'})} initialCategory={view.initialCategory} onViewEditor={(t) => setView({ name: 'editor', transaction: t })} />
+                        <PeriodPage 
+                            title={view.title} 
+                            type={view.type} 
+                            total={view.total} 
+                            allTransactions={transactions} 
+                            onClose={()=>setView({name:'main'})} 
+                            initialCategory={view.initialCategory} 
+                            onViewEditor={(t) => setView({ name: 'editor', transaction: t })} 
+                            headerImage={headerImage}
+                            onUpload={handleImageUpload}
+                        />
                     )}
                 </div>
             );
