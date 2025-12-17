@@ -5,8 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AI 随手记">
     <meta name="theme-color" content="#09090B">
     <title>AI 随手记</title>
+    
+    <!-- 🎨 动态生成高级图标脚本 -->
+    <script>
+        (function() {
+            const size = 512;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#18181B'; 
+            ctx.fillRect(0, 0, size, size);
+            const glow = ctx.createRadialGradient(size/2, size/2, size/4, size/2, size/2, size);
+            glow.addColorStop(0, 'rgba(45, 212, 191, 0.1)'); 
+            glow.addColorStop(1, 'rgba(24, 24, 27, 0)');
+            ctx.fillStyle = glow;
+            ctx.fillRect(0, 0, size, size);
+            const gradient = ctx.createLinearGradient(100, 100, 400, 400);
+            gradient.addColorStop(0, '#2DD4BF'); 
+            gradient.addColorStop(1, '#40C4FF'); 
+            ctx.translate(size/2, size/2);
+            ctx.fillStyle = gradient;
+            function roundRect(x, y, w, h, r) {
+                ctx.beginPath(); ctx.moveTo(x+r, y); ctx.arcTo(x+w, y, x+w, y+h, r); ctx.arcTo(x+w, y+h, x, y+h, r); ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath(); ctx.fill();
+            }
+            roundRect(-140, -100, 280, 200, 40);
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath(); ctx.moveTo(-140, -40); ctx.lineTo(140, -40); ctx.lineTo(140, 100); ctx.lineTo(-140, 100); ctx.fill();
+            ctx.fillStyle = '#18181B'; ctx.beginPath(); ctx.arc(60, 0, 35, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(60, 0, 12, 0, Math.PI*2); ctx.fill();
+            const url = canvas.toDataURL('image/png');
+            const linkIcon = document.createElement('link'); linkIcon.rel = 'icon'; linkIcon.href = url; document.head.appendChild(linkIcon);
+            const linkApple = document.createElement('link'); linkApple.rel = 'apple-touch-icon'; linkApple.href = url; document.head.appendChild(linkApple);
+        })();
+    </script>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -122,7 +157,7 @@
         .page-container {
             position: fixed; 
             top: 0; left: 0; width: 100%; height: 100%;
-            overflow: hidden; /* 🌟 关键：容器不滚动 */
+            overflow: hidden; 
             background-color: #09090B;
             z-index: 50;
             -webkit-overflow-scrolling: touch;
@@ -298,6 +333,40 @@
                         <div className="grid grid-cols-2 border-t border-white/10">
                             <button onClick={onCancel} className="py-3.5 text-[17px] text-white/90 font-medium active:bg-white/10 border-r border-white/10 transition-colors">取消</button>
                             <button onClick={onConfirm} className="py-3.5 text-[17px] text-[#FF453A] font-bold active:bg-white/10 transition-colors">删除</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 🌟 新增：分类选择弹窗
+        const CategoryPickerSheet = ({ isOpen, onClose, selected, onSelect }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-[200] flex items-end justify-center">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
+                    <div className="relative w-full bg-[#1C1C1E] rounded-t-[24px] p-6 pb-safe animate-slide-up border-t border-white/10 shadow-2xl">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-[17px] font-bold text-white">选择分类</h3>
+                            <button onClick={onClose} className="p-1 text-art-textSub active:opacity-60 bg-art-cardLight rounded-full"><X size={18} /></button>
+                        </div>
+                        <div className="grid grid-cols-4 gap-4">
+                            {categoriesList.map(cat => {
+                                const color = getCategoryColor(cat);
+                                const isSelected = selected === cat;
+                                return (
+                                    <button 
+                                        key={cat} 
+                                        onClick={() => { onSelect(cat); onClose(); }} 
+                                        className={`flex flex-col items-center justify-center gap-2 py-2 rounded-2xl transition-all active:scale-95 border ${isSelected ? `bg-white/10 border-white/20` : 'border-transparent hover:bg-white/5'}`}
+                                    >
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isSelected ? 'bg-white text-black' : `${color.bg} ${color.text}`}`}>
+                                            {React.cloneElement(getCategoryIcon(cat), { size: 20 })}
+                                        </div>
+                                        <span className={`text-[12px] font-medium ${isSelected ? 'text-white' : 'text-art-textSub'}`}>{cat}</span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -873,6 +942,7 @@
             const [isLoading, setIsLoading] = useState(true);
             const [isDateSheetOpen, setIsDateSheetOpen] = useState(false);
             const [isTimeSheetOpen, setIsTimeSheetOpen] = useState(false);
+            const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false); // 🆕 分类选择弹窗状态
             const [shakeError, setShakeError] = useState(false); 
             const swipeBack = useSwipeBack(onClose);
 
@@ -889,6 +959,9 @@
                     <ConfirmDialog isOpen={showDeleteConfirm} onCancel={() => setShowDeleteConfirm(false)} onConfirm={handleConfirmDelete} title="确定删除这条记录？" message="此操作无法撤销，数据将被永久移除。" />
                     <CustomDatePickerSheet isOpen={isDateSheetOpen} onClose={() => setIsDateSheetOpen(false)} currentDateStr={form.date} onSelect={(val) => setForm({...form, date: val})} />
                     <CustomTimePickerSheet isOpen={isTimeSheetOpen} onClose={() => setIsTimeSheetOpen(false)} currentTimeStr={form.time} onSelect={(val) => setForm({...form, time: val})} />
+                    {/* 🆕 注册分类选择弹窗 */}
+                    <CategoryPickerSheet isOpen={isCategorySheetOpen} onClose={() => setIsCategorySheetOpen(false)} selected={form.category} onSelect={(val) => { setForm({...form, category: val}); haptic('light'); }} />
+
                     <div className="relative w-full overflow-hidden shrink-0 transition-all duration-500 ease-out" style={{ height: '240px', opacity: isLoading ? 0.5 : 1 }}>
                         <div className={`absolute inset-0 bg-gradient-to-b ${currentCategoryColor.gradient} via-black/80 to-[#09090B] opacity-30`}></div>
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 mix-blend-overlay"></div>
@@ -896,17 +969,75 @@
                             <button onClick={swipeBack.triggerClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 backdrop-blur-md active:bg-white/10 transition-colors text-white"><ArrowLeft size={20} /></button>
                             <button onClick={handleSave} className="px-4 h-9 rounded-full bg-white text-black font-bold text-[13px] active:scale-95 transition-transform flex items-center gap-2">{loading && <Loader2 size={12} className="animate-spin" />}{transaction ? '保存' : '完成'}</button>
                         </div>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pt-10 z-10 animate-bounce-in pointer-events-none"> 
-                            <div className={`w-16 h-16 rounded-[24px] flex items-center justify-center mb-6 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] ${currentCategoryColor.bg} ${currentCategoryColor.text} border border-white/10 backdrop-blur-xl`}>{React.cloneElement(getCategoryIcon(form.category), { size: 32, strokeWidth: 1.5 })}</div>
-                            <div className={`flex items-baseline justify-center w-full px-8 relative pointer-events-auto ${shakeError ? 'animate-shake text-red-500' : ''}`}> <span className={`text-[32px] font-light absolute left-8 top-2 transition-colors ${shakeError ? 'text-red-500/50' : 'text-white/40'}`}>¥</span><input type="number" value={form.amount} onChange={(e) => setForm({...form, amount: e.target.value})} placeholder="0.00" className={`w-full bg-transparent text-[56px] font-bold placeholder-white/10 font-mono text-center outline-none caret-art-accent tracking-tighter transition-colors ${shakeError ? 'text-red-500' : 'text-white'}`} autoFocus={!transaction} /></div>
-                            <div className="text-[13px] text-white/30 mt-2 font-medium tracking-widest uppercase mb-1">{transaction ? 'EDIT RECORD' : 'NEW RECORD'}</div>
-                            <div className="text-[13px] text-white/40 font-medium tracking-wide">{form.category}</div>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pt-6 z-10 animate-bounce-in pointer-events-none"> 
+                            {/* 🔥 点击图标唤起分类选择 */}
+                            <div onClick={() => setIsCategorySheetOpen(true)} className={`w-16 h-16 rounded-[24px] flex items-center justify-center mb-6 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] ${currentCategoryColor.bg} ${currentCategoryColor.text} border border-white/10 backdrop-blur-xl pointer-events-auto active:scale-90 transition-transform cursor-pointer`}>{React.cloneElement(getCategoryIcon(form.category), { size: 32, strokeWidth: 1.5 })}</div>
+                            
+                            <div className={`flex items-baseline justify-center w-full px-8 relative pointer-events-auto ${shakeError ? 'animate-shake text-red-500' : ''}`}> 
+                                <span className={`text-[32px] font-light absolute left-8 top-2 transition-colors ${shakeError ? 'text-red-500/50' : 'text-white/40'}`}>¥</span>
+                                <input type="number" value={form.amount} onChange={(e) => setForm({...form, amount: e.target.value})} placeholder="0.00" className={`w-full bg-transparent text-[56px] font-bold placeholder-white/10 font-mono text-center outline-none caret-art-accent tracking-tighter transition-colors ${shakeError ? 'text-red-500' : 'text-white'}`} autoFocus={!transaction} />
+                            </div>
+
+                            {/* 🔥 恢复灰色文字 (点击也能唤起分类选择) */}
+                            <div onClick={() => setIsCategorySheetOpen(true)} className="flex flex-col items-center mt-2 pointer-events-auto cursor-pointer active:opacity-60 transition-opacity">
+                                <div className="text-[11px] text-white/30 font-medium tracking-widest uppercase mb-0.5">{transaction ? 'EDIT RECORD' : 'NEW RECORD'}</div>
+                                <div className="text-[13px] text-white/40 font-medium tracking-wide flex items-center gap-1">{form.category} <ChevronDown size={12} className="opacity-50"/></div>
+                            </div>
                         </div>
                     </div>
-                    <div className="flex-1 px-4 -mt-8 relative z-30 animate-slide-up-stagger overflow-hidden" style={{ animationDelay: '0.1s' }}>
-                        <div className="bg-[#121212] rounded-t-[32px] h-full border-t border-[#2C2C2E] p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl pb-32">
-                            <div className="mb-6"><h4 className="text-[11px] text-white/30 font-bold mb-3 ml-1 uppercase tracking-widest flex items-center gap-2"><Tag size={10} /> Change Category</h4><div className="grid grid-cols-4 gap-3">{categoriesList.map(cat => { const color = getCategoryColor(cat); const isSelected = form.category === cat; return (<button key={cat} onClick={() => {setForm({...form, category: cat}); haptic('light');}} className={`flex flex-col items-center justify-center py-2.5 rounded-[20px] transition-all active:scale-90 duration-300 border ${isSelected ? `bg-white text-black shadow-lg scale-105 border-white` : 'bg-[#1C1C1E] border-white/5 hover:bg-white/5'}`}><div className={`w-7 h-7 rounded-full flex items-center justify-center mb-1 transition-colors ${isSelected ? 'text-black bg-black/10' : 'text-white/50'}`}>{React.cloneElement(getCategoryIcon(cat), { size: 14 })}</div><span className={`text-[10px] font-bold ${isSelected ? 'text-black' : 'text-white/40'}`}>{cat}</span></button>); })}</div></div>
-                            <div className="mb-4"><h4 className="text-[11px] text-white/30 font-bold mb-3 ml-1 uppercase tracking-widest flex items-center gap-2"><PenLine size={10} /> Details</h4><div className="bg-[#1C1C1E] rounded-[24px] border border-white/5 overflow-hidden"><div className="flex items-center px-5 py-3.5 border-b border-white/5 group transition-colors hover:bg-white/5"><div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50"><ShoppingBag size={16} /></div><div className="flex-1"><div className="text-[11px] text-white/40 mb-0.5">商户</div><input type="text" value={form.merchant} onChange={(e) => setForm({...form, merchant: e.target.value})} placeholder="输入商户名称" className="w-full bg-transparent text-[15px] text-white focus:outline-none placeholder-white/20 font-medium" /></div></div><div className="flex items-center px-5 py-3.5 border-b border-white/5 group transition-colors hover:bg-white/5"><div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50"><Clock size={16} /></div><div className="flex-1 flex gap-4"><div className="flex-1" onClick={() => setIsDateSheetOpen(true)}><div className="text-[11px] text-white/40 mb-0.5">日期</div><div className="text-[15px] text-white font-medium">{form.date}</div></div><div className="w-[1px] bg-white/10 my-1"></div><div className="flex-1" onClick={() => setIsTimeSheetOpen(true)}><div className="text-[11px] text-white/40 mb-0.5">时间</div><div className="text-[15px] text-white font-medium">{form.time}</div></div></div></div><div className="flex items-start px-5 py-3.5 group transition-colors hover:bg-white/5"><div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50 mt-0.5"><MessageCircle size={16} /></div><div className="flex-1"><div className="text-[11px] text-white/40 mb-0.5">备注</div><textarea rows="2" value={form.note} onChange={(e) => setForm({...form, note: e.target.value})} placeholder="添加备注..." className="w-full bg-transparent text-[15px] text-white focus:outline-none placeholder-white/20 font-medium resize-none" /></div></div></div></div>
+                    
+                    <div className="flex-1 -mt-8 relative z-30 animate-slide-up-stagger overflow-y-auto no-scrollbar pb-10">
+                        <div className="bg-[#121212] rounded-t-[32px] min-h-full border-t border-[#2C2C2E] p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl pb-32">
+                            {/* 🔥 已移除 Change Category Grid，改为更简洁的列表 */}
+                            
+                            <div className="mb-4">
+                                <h4 className="text-[11px] text-white/30 font-bold mb-3 ml-1 uppercase tracking-widest flex items-center gap-2"><PenLine size={10} /> Details</h4>
+                                <div className="bg-[#1C1C1E] rounded-[24px] border border-white/5 overflow-hidden">
+                                    
+                                    {/* 🆕 新增：分类选择行 (作为网格的替代) */}
+                                    <div className="flex items-center px-5 py-3.5 border-b border-white/5 group transition-colors hover:bg-white/5" onClick={() => setIsCategorySheetOpen(true)}>
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50"><Tag size={16} /></div>
+                                        <div className="flex-1 flex justify-between items-center">
+                                            <div className="text-[15px] text-white font-medium">分类</div>
+                                            <div className="flex items-center gap-2 text-white/60">
+                                                <span>{form.category}</span>
+                                                <ChevronRight size={16} className="opacity-50"/>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center px-5 py-3.5 border-b border-white/5 group transition-colors hover:bg-white/5">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50"><ShoppingBag size={16} /></div>
+                                        <div className="flex-1">
+                                            <div className="text-[11px] text-white/40 mb-0.5">商户</div>
+                                            <input type="text" value={form.merchant} onChange={(e) => setForm({...form, merchant: e.target.value})} placeholder="输入商户名称" className="w-full bg-transparent text-[15px] text-white focus:outline-none placeholder-white/20 font-medium" />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center px-5 py-3.5 border-b border-white/5 group transition-colors hover:bg-white/5">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50"><Clock size={16} /></div>
+                                        <div className="flex-1 flex gap-4">
+                                            <div className="flex-1" onClick={() => setIsDateSheetOpen(true)}>
+                                                <div className="text-[11px] text-white/40 mb-0.5">日期</div>
+                                                <div className="text-[15px] text-white font-medium">{form.date}</div>
+                                            </div>
+                                            <div className="w-[1px] bg-white/10 my-1"></div>
+                                            <div className="flex-1" onClick={() => setIsTimeSheetOpen(true)}>
+                                                <div className="text-[11px] text-white/40 mb-0.5">时间</div>
+                                                <div className="text-[15px] text-white font-medium">{form.time}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start px-5 py-3.5 group transition-colors hover:bg-white/5">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50 mt-0.5"><MessageCircle size={16} /></div>
+                                        <div className="flex-1">
+                                            <div className="text-[11px] text-white/40 mb-0.5">备注</div>
+                                            <textarea rows="2" value={form.note} onChange={(e) => setForm({...form, note: e.target.value})} placeholder="添加备注..." className="w-full bg-transparent text-[15px] text-white focus:outline-none placeholder-white/20 font-medium resize-none" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             {transaction && (<div className="flex justify-center mt-auto pb-4"><button onClick={() => setShowDeleteConfirm(true)} className="flex items-center gap-2 text-[#FF453A] font-medium text-[13px] opacity-60 hover:opacity-100 transition-opacity py-2 px-6 active:scale-95"><Trash2 size={16} /> 删除此记录</button></div>)}
                         </div>
                     </div>
@@ -1031,18 +1162,17 @@
                                     <div className="mx-4 h-[140px] rounded-[32px] relative overflow-hidden shadow-2xl mb-6 group">
                                         <img src={headerImage} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" />
                                         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/80"></div>
+                                        <div className="absolute top-6 left-6 z-10">
+                                            <div className="text-[14px] text-white/70 font-medium mb-1">本月收支统计</div>
+                                            <div className="text-[12px] text-white/50">总支出</div>
+                                            <div className="text-[42px] font-bold text-white font-mono tracking-tighter leading-none -ml-1">{formatMoney(stats.monthTotal)}</div>
+                                        </div>
                                         
                                         {/* 主页顶部图片上传按钮 */}
                                         <label className="absolute bottom-4 right-4 z-30 p-2 bg-black/30 backdrop-blur-md rounded-full text-white/70 hover:text-white transition-colors cursor-pointer active:scale-90">
                                             <Camera size={16} />
                                             <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                                         </label>
-
-                                        <div className="absolute top-6 left-6 z-10">
-                                            <div className="text-[14px] text-white/70 font-medium mb-1">本月收支统计</div>
-                                            <div className="text-[12px] text-white/50">总支出</div>
-                                            <div className="text-[42px] font-bold text-white font-mono tracking-tighter leading-none -ml-1">{formatMoney(stats.monthTotal)}</div>
-                                        </div>
                                     </div>
 
                                     <div className="mx-4 space-y-3 mb-6">
@@ -1067,11 +1197,11 @@
                             )}
                             {activeTab === 'flow' && (
                                 <div className="pb-24 animate-fade-in">
+                                    {/* 优化后的顶部图片区域：无底部边距 */}
                                     <div className="relative h-[140px] w-full overflow-hidden shrink-0">
                                         <img src={headerImage} className="absolute inset-0 w-full h-full object-cover" />
                                         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#000000]"></div>
                                         
-                                        {/* 主页流水 Tab 顶部图片上传按钮 */}
                                         <label className="absolute bottom-4 right-4 z-30 p-2 bg-black/30 backdrop-blur-md rounded-full text-white/70 hover:text-white transition-colors cursor-pointer active:scale-90">
                                             <Camera size={16} />
                                             <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
@@ -1083,6 +1213,8 @@
                                             <div className="text-[40px] font-bold text-white font-mono tracking-tighter leading-none -ml-1">-{formatMoney(transactions.reduce((acc, t) => acc + Math.abs(Number(t.amount)), 0))}</div>
                                         </div>
                                     </div>
+
+                                    {/* 优化后的列表：无内边距，紧凑排列 */}
                                     <div className="w-full">
                                         {groupedByMonth.map((monthGroup) => (<MonthGroup key={monthGroup.key} year={monthGroup.year} month={monthGroup.month} totalExpense={monthGroup.totalExpense} days={monthGroup.daysSorted} onViewEditor={(t) => setView({ name: 'editor', transaction: t })} />))}
                                         {transactions.length === 0 && (<div className="flex flex-col items-center justify-center pt-20 opacity-40"><div className="text-4xl mb-3">🍃</div><p className="text-art-textSub">暂无流水记录</p></div>)}
