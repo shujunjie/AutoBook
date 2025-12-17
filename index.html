@@ -649,7 +649,7 @@
         };
 
         const TransactionItem = ({ t, onClick }) => (
-            <div onClick={onClick} className="flex items-center justify-between py-3.5 px-5 active:bg-white/5 bg-[#1C1C1E] border-b border-white/5 last:border-b-0 transition-colors cursor-pointer">
+            <div onClick={onClick} className="flex items-center justify-between py-3 px-5 active:bg-white/5 bg-[#1C1C1E] border-b border-white/5 last:border-b-0 transition-colors cursor-pointer">
                 <div className="flex items-center gap-4 overflow-hidden"><div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${getCategoryColor(t.category).bg} ${getCategoryColor(t.category).text}`}>{React.cloneElement(getCategoryIcon(t.category), { size: 18 })}</div><div className="flex flex-col min-w-0"><div className="text-[15px] text-white font-bold truncate mb-1">{t.merchant || t.category}</div><div className="text-[12px] text-[#666] font-normal truncate flex items-center gap-1.5"><span>{getRawTimeStr(t.date)}</span><span>·</span><span>{t.note || t.category}</span></div></div></div><div className="text-[17px] text-art-blue font-bold shrink-0 ml-3 font-mono tracking-tight">{formatMoney(t.amount)}</div>
             </div>
         );
@@ -658,7 +658,7 @@
             const [isExpanded, setIsExpanded] = useState(true);
             return (
                 <div className="animate-slide-up-stagger" style={{ animationDelay: '0.1s' }}>
-                    <div className="sticky top-0 z-20 flex justify-between items-center py-3 px-5 bg-[#121212]/95 backdrop-blur-xl border-b border-white/5 cursor-pointer" onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}>
+                    <div className="sticky top-0 z-20 flex justify-between items-center py-2.5 px-5 bg-[#121212]/95 backdrop-blur-xl border-b border-white/5 cursor-pointer" onClick={() => { setIsExpanded(!isExpanded); haptic('light'); }}>
                         <div className="flex items-baseline gap-1.5"><span className="text-[20px] font-bold text-white">{month}月</span><span className="text-[13px] text-art-textSub">{year}</span></div>
                         <div className="flex items-center gap-3"><div className="text-right"><div className="text-[11px] text-art-textSub opacity-60 mb-0.5">总支出</div><div className="text-[14px] text-white font-medium">{formatMoney(totalExpense)}</div></div><div className={`transition-transform duration-200 text-art-textSub ${isExpanded ? 'rotate-180' : ''}`}><ChevronDown size={18} /></div></div>
                     </div>
@@ -670,7 +670,7 @@
                                 const isToday = isSameDay(dObj, new Date());
                                 return (
                                     <div key={dateStr}>
-                                        <div className="flex justify-between items-center px-5 py-1.5 bg-[#27272A] border-b border-white/5">
+                                        <div className="flex justify-between items-center px-5 py-1 bg-[#27272A] border-b border-white/5">
                                             <div className={`text-[12px] font-medium ${isToday ? 'text-art-accent' : 'text-art-textSub'}`}>{format(dObj, 'MM月dd日')} {weekDay}</div>
                                         </div>
                                         <div className="bg-[#1C1C1E]">
@@ -695,9 +695,9 @@
             // 🌟 修复：默认时间维度逻辑
             const [timeDimension, setTimeDimension] = useState(() => {
                 if (type === 'today') return 'day';
-                if (type === 'week') return 'day';   // 本周 -> 按日展示
-                if (type === 'month') return 'day';  // 本月 -> 按日展示
-                if (type === 'year') return 'month'; // 本年 -> 按月展示
+                if (type === 'week') return 'week';
+                if (type === 'month') return 'month';
+                if (type === 'year') return 'year';
                 return 'day'; 
             });
 
@@ -950,13 +950,13 @@
             const [loading, setLoading] = useState(false);
             const [currentDate, setCurrentDate] = useState(new Date());
             const [toast, setToast] = useState(null);
-            
-            // view 状态控制当前显示的覆盖层页面
             const [view, setView] = useState({ name: 'main' }); 
             const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, id: null });
             const [pullY, setPullY] = useState(0);
             const [isRefreshing, setIsRefreshing] = useState(false);
-            const [headerImage, setHeaderImage] = useState(localStorage.getItem('custom_header_image') || "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop");
+            const [headerImage, setHeaderImage] = useState(() => {
+                return localStorage.getItem('custom_header_image') || "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop";
+            });
             const startY = useRef(0);
             const scrollContainerRef = useRef(null);
 
@@ -974,30 +974,30 @@
                 const file = event.target.files[0];
                 if (!file) return;
 
-                const uploadingToast = setTimeout(() => showToast("正在上传...", 'success'), 100);
+                // Limit file size to prevent localStorage quota exceeded (e.g., 2MB)
+                if (file.size > 2 * 1024 * 1024) {
+                    showToast("图片过大，请选择小于2MB的图片", 'error');
+                    return;
+                }
+
+                const uploadingToast = setTimeout(() => showToast("正在处理...", 'success'), 100);
 
                 try {
-                    // 1. Delete old image if it's a custom one (check if URL contains supabase)
-                    const oldImagePath = localStorage.getItem('custom_header_image_path');
-                    if (oldImagePath) {
-                        await supabase.storage.from('memo_images').remove([oldImagePath]);
-                    }
-
-                    // 2. Upload new
-                    const fileName = `header_${Date.now()}_${file.name}`;
-                    const { data, error } = await supabase.storage.from('memo_images').upload(fileName, file);
-                    
-                    if (error) throw error;
-
-                    // 3. Get URL
-                    const { data: { publicUrl } } = supabase.storage.from('memo_images').getPublicUrl(fileName);
-                    
-                    // 4. Update State & Storage
-                    setHeaderImage(publicUrl);
-                    localStorage.setItem('custom_header_image', publicUrl);
-                    localStorage.setItem('custom_header_image_path', fileName);
-                    
-                    showToast("封面更新成功");
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const base64String = reader.result;
+                        
+                        // Update State & Storage
+                        setHeaderImage(base64String);
+                        try {
+                            localStorage.setItem('custom_header_image', base64String);
+                            showToast("封面更新成功");
+                        } catch (e) {
+                            console.error("Local storage error:", e);
+                            showToast("保存失败，图片可能过大", 'error');
+                        }
+                    };
+                    reader.readAsDataURL(file);
                 } catch (error) {
                     console.error('Upload failed:', error);
                     showToast("上传失败", 'error');
@@ -1069,15 +1069,9 @@
                             )}
                             {activeTab === 'flow' && (
                                 <div className="pb-24 animate-fade-in">
-                                    <div className="relative h-[140px] w-full overflow-hidden shrink-0 mb-6">
-                                        <img src={headerImage} className="absolute inset-0 w-full h-full object-cover" />
+                                    <div className="relative h-[140px] w-full overflow-hidden shrink-0">
+                                        <img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover" />
                                         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#000000]"></div>
-                                        
-                                        <label className="absolute bottom-4 right-4 z-30 p-2 bg-black/30 backdrop-blur-md rounded-full text-white/70 hover:text-white transition-colors cursor-pointer active:scale-90">
-                                            <Camera size={16} />
-                                            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                                        </label>
-
                                         <div className="absolute top-0 left-0 right-0 h-full flex flex-col justify-end p-6 pb-4 z-10 pt-safe">
                                             <div className="text-[18px] font-bold text-white mb-3">账单流水</div>
                                             <div className="text-[12px] text-white/60 mb-0.5">总支出</div>
