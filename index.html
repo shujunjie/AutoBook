@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="AI 随手记">
-    <meta name="theme-color" content="#09090B">
+    <meta name="theme-color" content="#000000">
     <title>AI 随手记</title>
     
     <!-- 🎨 动态生成高级图标脚本 -->
@@ -56,15 +56,15 @@
                     },
                     colors: {
                         art: {
-                            bg: '#09090B',      
-                            card: '#18181B',    
-                            cardLight: '#27272A', 
-                            accent: '#4ADE80',  
-                            cyan: '#2DD4BF',    
-                            blue: '#40C4FF',    
+                            bg: '#000000',      // 纯黑背景更显高级
+                            card: '#1C1C1E',    // iOS System Gray 6
+                            cardLight: '#2C2C2E', // iOS System Gray 5
+                            accent: '#34C759',  // iOS Green
+                            cyan: '#30B0C7',    // iOS Teal
+                            blue: '#0A84FF',    // iOS Blue
                             textMain: '#FFFFFF',
-                            textSub: '#A1A1AA', 
-                            border: '#27272A',
+                            textSub: '#8E8E93', // iOS Gray
+                            border: '#38383A',
                         }
                     },
                     animation: {
@@ -138,7 +138,7 @@
             height: 100%;
             width: 100%;
             overflow: hidden; 
-            background-color: #09090B;
+            background-color: #000000;
         }
 
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -158,7 +158,7 @@
             position: fixed; 
             top: 0; left: 0; width: 100%; height: 100%;
             overflow: hidden; 
-            background-color: #09090B;
+            background-color: #000000; /* 全局纯黑背景 */
             z-index: 50;
             -webkit-overflow-scrolling: touch;
         }
@@ -360,8 +360,8 @@
                                         onClick={() => { onSelect(cat); onClose(); }} 
                                         className={`flex flex-col items-center justify-center gap-2 py-2 rounded-2xl transition-all active:scale-95 border ${isSelected ? `bg-white/10 border-white/20` : 'border-transparent hover:bg-white/5'}`}
                                     >
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isSelected ? 'bg-white text-black' : `${color.bg} ${color.text}`}`}>
-                                            {React.cloneElement(getCategoryIcon(cat), { size: 20 })}
+                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isSelected ? 'bg-white text-black' : `${color.bg} ${color.text}`}`}>
+                                            {React.cloneElement(getCategoryIcon(cat), { size: 24 })}
                                         </div>
                                         <span className={`text-[12px] font-medium ${isSelected ? 'text-white' : 'text-art-textSub'}`}>{cat}</span>
                                     </button>
@@ -942,7 +942,7 @@
             const [isLoading, setIsLoading] = useState(true);
             const [isDateSheetOpen, setIsDateSheetOpen] = useState(false);
             const [isTimeSheetOpen, setIsTimeSheetOpen] = useState(false);
-            const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false); // 🆕 分类选择弹窗状态
+            const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false); 
             const [shakeError, setShakeError] = useState(false); 
             const swipeBack = useSwipeBack(onClose);
 
@@ -955,80 +955,106 @@
             const currentCategoryColor = getCategoryColor(form.category);
 
             return (
-                <div className="page-container page-enter-active flex flex-col z-[100] shadow-2xl" style={swipeBack.style} {...swipeBack.bind}>
+                <div className="page-container page-enter-active flex flex-col z-[100] shadow-2xl bg-black" style={swipeBack.style} {...swipeBack.bind}>
                     <ConfirmDialog isOpen={showDeleteConfirm} onCancel={() => setShowDeleteConfirm(false)} onConfirm={handleConfirmDelete} title="确定删除这条记录？" message="此操作无法撤销，数据将被永久移除。" />
                     <CustomDatePickerSheet isOpen={isDateSheetOpen} onClose={() => setIsDateSheetOpen(false)} currentDateStr={form.date} onSelect={(val) => setForm({...form, date: val})} />
                     <CustomTimePickerSheet isOpen={isTimeSheetOpen} onClose={() => setIsTimeSheetOpen(false)} currentTimeStr={form.time} onSelect={(val) => setForm({...form, time: val})} />
-                    {/* 🆕 注册分类选择弹窗 */}
                     <CategoryPickerSheet isOpen={isCategorySheetOpen} onClose={() => setIsCategorySheetOpen(false)} selected={form.category} onSelect={(val) => { setForm({...form, category: val}); haptic('light'); }} />
 
-                    <div className="relative w-full overflow-hidden shrink-0 transition-all duration-500 ease-out" style={{ height: '240px', opacity: isLoading ? 0.5 : 1 }}>
-                        <div className={`absolute inset-0 bg-gradient-to-b ${currentCategoryColor.gradient} via-black/80 to-[#09090B] opacity-30`}></div>
-                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 mix-blend-overlay"></div>
+                    {/* 🌟 恢复顶部高级光效 */}
+                    <div className="relative w-full overflow-hidden shrink-0 transition-all duration-500 ease-out" style={{ height: '340px', opacity: isLoading ? 0.5 : 1 }}>
+                        <div className={`absolute inset-0 bg-gradient-to-b ${currentCategoryColor.gradient} via-black/80 to-[#09090B] opacity-40`}></div>
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+                        
                         <div className="absolute top-0 left-0 right-0 pt-safe px-4 h-[60px] flex items-center justify-between z-20">
                             <button onClick={swipeBack.triggerClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 backdrop-blur-md active:bg-white/10 transition-colors text-white"><ArrowLeft size={20} /></button>
-                            <button onClick={handleSave} className="px-4 h-9 rounded-full bg-white text-black font-bold text-[13px] active:scale-95 transition-transform flex items-center gap-2">{loading && <Loader2 size={12} className="animate-spin" />}{transaction ? '保存' : '完成'}</button>
-                        </div>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pt-6 z-10 animate-bounce-in pointer-events-none"> 
-                            {/* 🔥 点击图标唤起分类选择 */}
-                            <div onClick={() => setIsCategorySheetOpen(true)} className={`w-16 h-16 rounded-[24px] flex items-center justify-center mb-6 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] ${currentCategoryColor.bg} ${currentCategoryColor.text} border border-white/10 backdrop-blur-xl pointer-events-auto active:scale-90 transition-transform cursor-pointer`}>{React.cloneElement(getCategoryIcon(form.category), { size: 32, strokeWidth: 1.5 })}</div>
                             
+                            {/* 🌟 优化右上角按钮：白色胶囊样式 */}
+                            <button 
+                                onClick={handleSave} 
+                                className="px-4 py-1.5 rounded-full bg-white text-black font-bold text-[13px] active:scale-95 transition-transform flex items-center gap-1.5 shadow-lg border border-white/20"
+                            >
+                                {loading && <Loader2 size={12} className="animate-spin" />}
+                                {transaction ? '更新' : '完成'}
+                            </button>
+                        </div>
+
+                        {/* 图标与金额居中 */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pt-12 z-10 animate-bounce-in pointer-events-none"> 
+                            {/* 分类图标 */}
+                            <div onClick={() => setIsCategorySheetOpen(true)} className={`w-16 h-16 rounded-full flex items-center justify-center mb-8 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] ${currentCategoryColor.bg} ${currentCategoryColor.text} border border-white/10 backdrop-blur-xl pointer-events-auto active:scale-90 transition-transform cursor-pointer`}>
+                                {React.cloneElement(getCategoryIcon(form.category), { size: 32, strokeWidth: 1.5 })}
+                            </div>
+                            
+                            {/* 金额输入 */}
                             <div className={`flex items-baseline justify-center w-full px-8 relative pointer-events-auto ${shakeError ? 'animate-shake text-red-500' : ''}`}> 
                                 <span className={`text-[32px] font-light absolute left-8 top-2 transition-colors ${shakeError ? 'text-red-500/50' : 'text-white/40'}`}>¥</span>
-                                <input type="number" value={form.amount} onChange={(e) => setForm({...form, amount: e.target.value})} placeholder="0.00" className={`w-full bg-transparent text-[56px] font-bold placeholder-white/10 font-mono text-center outline-none caret-art-accent tracking-tighter transition-colors ${shakeError ? 'text-red-500' : 'text-white'}`} autoFocus={!transaction} />
-                            </div>
-
-                            {/* 🔥 恢复灰色文字 (点击也能唤起分类选择) */}
-                            <div onClick={() => setIsCategorySheetOpen(true)} className="flex flex-col items-center mt-2 pointer-events-auto cursor-pointer active:opacity-60 transition-opacity">
-                                <div className="text-[11px] text-white/30 font-medium tracking-widest uppercase mb-0.5">{transaction ? 'EDIT RECORD' : 'NEW RECORD'}</div>
-                                <div className="text-[13px] text-white/40 font-medium tracking-wide flex items-center gap-1">{form.category} <ChevronDown size={12} className="opacity-50"/></div>
+                                <input 
+                                    type="number" 
+                                    value={form.amount} 
+                                    onChange={(e) => setForm({...form, amount: e.target.value})} 
+                                    placeholder="0.00" 
+                                    className={`w-full bg-transparent text-[56px] font-bold placeholder-white/10 font-mono text-center outline-none caret-art-accent tracking-tighter transition-colors ${shakeError ? 'text-red-500' : 'text-white'}`} 
+                                    autoFocus={!transaction} 
+                                />
                             </div>
                         </div>
                     </div>
                     
-                    <div className="flex-1 -mt-8 relative z-30 animate-slide-up-stagger overflow-y-auto no-scrollbar pb-10">
-                        <div className="bg-[#121212] rounded-t-[32px] min-h-full border-t border-[#2C2C2E] p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl pb-32">
-                            {/* 🔥 已移除 Change Category Grid，改为更简洁的列表 */}
+                    {/* 🔥 修复：改为 overflow-hidden 禁止滑动，固定显示 */}
+                    <div className="flex-1 -mt-8 relative z-30 animate-slide-up-stagger overflow-hidden">
+                        <div className="bg-[#121212] rounded-t-[32px] h-full border-t border-[#2C2C2E] p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl">
                             
                             <div className="mb-4">
                                 <h4 className="text-[11px] text-white/30 font-bold mb-3 ml-1 uppercase tracking-widest flex items-center gap-2"><PenLine size={10} /> Details</h4>
                                 <div className="bg-[#1C1C1E] rounded-[24px] border border-white/5 overflow-hidden">
                                     
-                                    {/* 🆕 新增：分类选择行 (作为网格的替代) */}
-                                    <div className="flex items-center px-5 py-3.5 border-b border-white/5 group transition-colors hover:bg-white/5" onClick={() => setIsCategorySheetOpen(true)}>
-                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50"><Tag size={16} /></div>
-                                        <div className="flex-1 flex justify-between items-center">
-                                            <div className="text-[15px] text-white font-medium">分类</div>
-                                            <div className="flex items-center gap-2 text-white/60">
-                                                <span>{form.category}</span>
-                                                <ChevronRight size={16} className="opacity-50"/>
-                                            </div>
+                                    {/* 分类 */}
+                                    <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/5 active:bg-white/5 transition-colors cursor-pointer" onClick={() => setIsCategorySheetOpen(true)}>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50"><Tag size={16} /></div>
+                                            <span className="text-[15px] text-art-textSub">分类</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[17px] text-white font-medium">{form.category}</span>
+                                            <ChevronRight size={16} className="text-white/30" />
                                         </div>
                                     </div>
 
+                                    {/* 日期 */}
+                                    <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/5 active:bg-white/5 transition-colors cursor-pointer" onClick={() => setIsDateSheetOpen(true)}>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50"><CalendarDays size={16} /></div>
+                                            <span className="text-[15px] text-art-textSub">日期</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[17px] text-white font-medium">{form.date}</span>
+                                            <ChevronRight size={16} className="text-white/30" />
+                                        </div>
+                                    </div>
+
+                                    {/* 时间 */}
+                                    <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/5 active:bg-white/5 transition-colors cursor-pointer" onClick={() => setIsTimeSheetOpen(true)}>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50"><Clock size={16} /></div>
+                                            <span className="text-[15px] text-art-textSub">时间</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[17px] text-white font-medium">{form.time}</span>
+                                            <ChevronRight size={16} className="text-white/30" />
+                                        </div>
+                                    </div>
+
+                                    {/* 商户 */}
                                     <div className="flex items-center px-5 py-3.5 border-b border-white/5 group transition-colors hover:bg-white/5">
                                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50"><ShoppingBag size={16} /></div>
                                         <div className="flex-1">
                                             <div className="text-[11px] text-white/40 mb-0.5">商户</div>
-                                            <input type="text" value={form.merchant} onChange={(e) => setForm({...form, merchant: e.target.value})} placeholder="输入商户名称" className="w-full bg-transparent text-[15px] text-white focus:outline-none placeholder-white/20 font-medium" />
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="flex items-center px-5 py-3.5 border-b border-white/5 group transition-colors hover:bg-white/5">
-                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50"><Clock size={16} /></div>
-                                        <div className="flex-1 flex gap-4">
-                                            <div className="flex-1" onClick={() => setIsDateSheetOpen(true)}>
-                                                <div className="text-[11px] text-white/40 mb-0.5">日期</div>
-                                                <div className="text-[15px] text-white font-medium">{form.date}</div>
-                                            </div>
-                                            <div className="w-[1px] bg-white/10 my-1"></div>
-                                            <div className="flex-1" onClick={() => setIsTimeSheetOpen(true)}>
-                                                <div className="text-[11px] text-white/40 mb-0.5">时间</div>
-                                                <div className="text-[15px] text-white font-medium">{form.time}</div>
-                                            </div>
+                                            <input type="text" value={form.merchant} onChange={(e) => setForm({...form, merchant: e.target.value})} placeholder="输入商户名称（可选）" className="w-full bg-transparent text-[15px] text-white focus:outline-none placeholder-white/20 font-medium" />
                                         </div>
                                     </div>
 
+                                    {/* 备注 */}
                                     <div className="flex items-start px-5 py-3.5 group transition-colors hover:bg-white/5">
                                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white/50 mt-0.5"><MessageCircle size={16} /></div>
                                         <div className="flex-1">
@@ -1038,7 +1064,15 @@
                                     </div>
                                 </div>
                             </div>
-                            {transaction && (<div className="flex justify-center mt-auto pb-4"><button onClick={() => setShowDeleteConfirm(true)} className="flex items-center gap-2 text-[#FF453A] font-medium text-[13px] opacity-60 hover:opacity-100 transition-opacity py-2 px-6 active:scale-95"><Trash2 size={16} /> 删除此记录</button></div>)}
+                            
+                            {/* 删除按钮 */}
+                            {transaction && (
+                                <div className="pt-2 flex justify-center">
+                                    <button onClick={() => setShowDeleteConfirm(true)} className="text-[#FF453A] text-[13px] font-medium active:opacity-60 transition-opacity flex items-center gap-2 py-2 px-4 rounded-full hover:bg-white/5">
+                                        <Trash2 size={14} /> 删除记录
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
