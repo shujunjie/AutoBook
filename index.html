@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="AI 随手记">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#09090B">
     <title>AI 随手记</title>
     
     <!-- 🎨 动态生成高级图标脚本 -->
@@ -56,15 +56,15 @@
                     },
                     colors: {
                         art: {
-                            bg: '#000000',      // 纯黑背景更显高级
-                            card: '#1C1C1E',    // iOS System Gray 6
-                            cardLight: '#2C2C2E', // iOS System Gray 5
-                            accent: '#34C759',  // iOS Green
-                            cyan: '#30B0C7',    // iOS Teal
-                            blue: '#0A84FF',    // iOS Blue
+                            bg: '#09090B',      
+                            card: '#18181B',    
+                            cardLight: '#27272A', 
+                            accent: '#4ADE80',  
+                            cyan: '#2DD4BF',    
+                            blue: '#40C4FF',    
                             textMain: '#FFFFFF',
-                            textSub: '#8E8E93', // iOS Gray
-                            border: '#38383A',
+                            textSub: '#A1A1AA', 
+                            border: '#27272A',
                         }
                     },
                     animation: {
@@ -134,11 +134,12 @@
     <script type="module" src="https://esm.sh/run" defer></script>
 
     <style>
+        /* 🌟 核心修复：将底色从 #000000 改为 #09090B，解决 PWA 底部黑条问题 */
         html, body, #root {
             height: 100%;
             width: 100%;
             overflow: hidden; 
-            background-color: #000000;
+            background-color: #09090B; /* 统一底色 */
         }
 
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -158,7 +159,7 @@
             position: fixed; 
             top: 0; left: 0; width: 100%; height: 100%;
             overflow: hidden; 
-            background-color: #000000; /* 全局纯黑背景 */
+            background-color: #09090B;
             z-index: 50;
             -webkit-overflow-scrolling: touch;
         }
